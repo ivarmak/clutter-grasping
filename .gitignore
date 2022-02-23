@@ -1,0 +1,7 @@
+results
+network_output
+images
+data
+.vscode
+-spullen-/MRCNNoutput
+mrcnn/weights/mask_rcnn_coco.h5
