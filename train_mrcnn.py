@@ -125,7 +125,7 @@ class CustomDataset(utils.Dataset):
         annotations1 = json.load(open(os.path.join(dataset_dir, json_file)))
 
         # print(annotations1)
-        annotations = list(annotations1.values())  # don't need the dict keys
+        annotations = list(annotations1.values())  # don't need the dict keys (names)
 
         # The VIA tool saves images in the JSON even if they don't have any
         # annotations. Skip unannotated images.
@@ -133,27 +133,35 @@ class CustomDataset(utils.Dataset):
         
         # Add images
         for a in annotations:
-            # print(a)
-            # Get the x, y coordinaets of points of the polygons that make up
-            # the outline of each object instance. There are stores in the
-            # shape_attributes (see json format above)
-            polygons = [r['shape_attributes'] for r in a['regions']] 
+
+            image_path = a['path']
+            mask = np.matrix(a['mask'])
+
+
+
+            # # print(a)
+            # # Get the x, y coordinaets of points of the polygons that make up
+            # # the outline of each object instance. There are stores in the
+            # # shape_attributes (see json format above)
+            # polygons = [r['shape_attributes'] for r in a['regions']] 
+
             objects = [s['region_attributes']['name'] for s in a['regions']]
             print("objects:",objects)
+
+            # TODO: uitzoeken waar dit num_ids gebeuren over gaat
+
             name_dict = {"bottle": 1,"glass": 2,"paper": 3,"trash": 4}
             # key = tuple(name_dict)
             num_ids = [name_dict[a] for a in objects]
-     
             # num_ids = [int(n['Event']) for n in objects]
-            # load_mask() needs the image size to convert polygons to masks.
-            # Unfortunately, VIA doesn't include it in JSON, so we must read
-            # the image. This is only managable since the dataset is tiny.
-            print("numids",num_ids)
-            image_path = os.path.join(dataset_dir, a['filename'])
-            image = skimage.io.imread(image_path)
-            height, width = image.shape[:2]
 
-
+            # # load_mask() needs the image size to convert polygons to masks.
+            # # Unfortunately, VIA doesn't include it in JSON, so we must read
+            # # the image. This is only managable since the dataset is tiny.
+            # print("numids",num_ids)
+            # image_path = os.path.join(dataset_dir, a['filename'])
+            # image = skimage.io.imread(image_path)
+            # height, width = image.shape[:2]
 
             # TODO 
             # - rewrite part above
@@ -163,10 +171,9 @@ class CustomDataset(utils.Dataset):
 
             self.add_image(
                 "object",  ## for a single class just add the name here
-                image_id=a['filename'],  # use file name as a unique image id
+                image_id=a['name'],  # use file name as a unique image id
                 path=image_path,
-                width=width, height=height,
-                polygons=polygons,
+                mask = mask,
                 num_ids=num_ids)
 
     def load_mask(self, image_id):

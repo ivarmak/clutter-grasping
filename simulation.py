@@ -7,6 +7,7 @@ import pybullet as p
 import argparse
 import os
 import sys
+import json
 import cv2
 import math
 import matplotlib.pyplot as plt
@@ -196,22 +197,62 @@ def look_at_banana(vis):
     print('NOT FOUND #', nfNumber)
     visualize.display_instances(rgb, box, mask, classID, class_names, score)
 
-def make_data():
-    ## Call json.dumps(obj) with obj as the list to serialize the list to a JSON formatted string.
-    
-    # print(arr)
-    
-    # # Output
-    # # [[1 2]
-    # # [3 4]]
+def make_data(vis):
+    CAM_Z = 1.9
+    IMG_SIZE = 224
 
-    # lists = arr.tolist()
-    # json_str = json.dumps(lists)
-    # print(json_str)
+    # cracker_path = 'objects/ycb_objects/YcbCrackerBox/model.urdf'
+    # hammer_path = 'objects/ycb_objects/YcbHammer/model.urdf'
+    banana_path = 'objects/ycb_objects/YcbBanana/model.urdf'
 
-    # # Output
-    # # [[1, 2], [3, 4]]
-    pass
+    ## camera settings: cam_pos, cam_target, near, far, size, fov
+    center_x, center_y, center_z = 0.05, -0.52, CAM_Z
+    camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (IMG_SIZE, IMG_SIZE), 40)
+    env = Environment(camera, vis=vis, finger_length=0.06)
+
+    dict = {}
+
+    train_or_val = 'trial'
+    nr_of_objects = 20
+
+    obj_name = 'Banana'
+
+    save_dir = 'data/' + train_or_val + '/'
+    width, height = IMG_SIZE, IMG_SIZE
+
+    ## loop for number of object instances
+    for obj_nr in range(nr_of_objects):
+        env.reset_robot()          
+        env.remove_all_obj()                        
+        env.load_isolated_obj(banana_path)
+
+        rgb, _, seg = camera.get_cam_img()
+
+        img_name = obj_name + str(obj_nr) + '.jpg'
+        img_path = save_dir + img_name
+
+        ## TODO: make id dependent on object name
+        id = 0
+
+        ## use np filter for finding mask coordinates
+        mask_coord = np.where(seg == 6)
+
+        inst = {
+            "name": obj_name + str(obj_nr),
+            "path": img_path,
+            "obj_id": id,
+            "width": width,
+            "height": height,
+            "mask_x": mask_coord[1].tolist(),
+            "mask_y":  mask_coord[0].tolist()        
+        }
+
+        dict[obj_nr] = inst
+        plt.imsave(img_path, rgb)
+    
+    json_path = save_dir + '/img_data.json'
+    with open(json_path, "w") as write:
+        json.dump(dict, write)
 
 
 class GrasppingScenarios():
@@ -581,7 +622,7 @@ def parse_args():
                         help='Save network output (True/False)')
 
     parser.add_argument('--device', type=str, default='cpu', help='device (cpu/gpu)')
-    parser.add_argument('--vis', type=bool, default=True, help='vis (True/False)')
+    parser.add_argument('--vis', type=bool, default=False, help='vis (True/False)')
     parser.add_argument('--report', type=bool, default=True, help='report (True/False)')
 
                         
@@ -602,6 +643,8 @@ if __name__ == '__main__':
         make_mask(vis)
     elif args.command == 'banana':
         look_at_banana(vis)
+    elif args.command == 'data':
+        make_data(vis)
     else:
         grasp = GrasppingScenarios(args.network)
 
