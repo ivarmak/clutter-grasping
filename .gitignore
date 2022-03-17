@@ -4,4 +4,4 @@ images
 data
 .vscode
 -spullen-/MRCNNoutput
-mrcnn/weights/mask_rcnn_coco.h5
+mrcnn/weights/
