@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import time
 import skimage.io
 
+from mrcnn.config import Config
 from mrcnn import utils
 import mrcnn.model as modellib
 from mrcnn import visualize
@@ -21,6 +22,75 @@ from mrcnn.coco import coco
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath('/home/ivar/Documents/Thesis/clutterbot/')
+
+def setup_mrcnn(weights):
+    # Directory to save logs and trained model
+    MODEL_DIR = os.path.join(ROOT_DIR, 'logs')
+    # Local path to your trained weights file
+    COCO_MODEL_PATH = os.path.join(ROOT_DIR, 'mrcnn/weights/mask_rcnn_coco.h5')
+    HAMMER_MODEL_PATH = os.path.join(ROOT_DIR, 'mrcnn/weights/mask_rcnn_hammer_0010.h5')
+
+    if weights == 'coco':
+        class InferenceConfig(coco.CocoConfig):
+            GPU_COUNT = 1
+            IMAGES_PER_GPU = 1
+            
+        config = InferenceConfig()
+
+        class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
+                    'bus', 'train', 'truck', 'boat', 'traffic light',
+                    'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird',
+                    'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear',
+                    'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie',
+                    'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball',
+                    'kite', 'baseball bat', 'baseball glove', 'skateboard',
+                    'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup',
+                    'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
+                    'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza',
+                    'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed',
+                    'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote',
+                    'keyboard', 'cell phone', 'microwave', 'oven', 'toaster',
+                    'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors',
+                    'teddy bear', 'hair drier', 'toothbrush']
+        weights_path = COCO_MODEL_PATH
+
+    elif weights == 'hammer':
+        class CustomConfig(Config):
+            NAME = "object"
+            IMAGES_PER_GPU = 1              # Adjust down if you use a smaller GPU.
+            NUM_CLASSES = 1 + 1             # Background + Hammer   
+            STEPS_PER_EPOCH = 100           # Number of training steps per epoch
+            DETECTION_MIN_CONFIDENCE = 0.9  # Skip detections with < 90% confidence
+
+        config = CustomConfig()
+
+        class InferenceConfig(config.__class__):
+            GPU_COUNT = 1
+            IMAGES_PER_GPU = 1
+            DETECTION_MIN_CONFIDENCE = 0.7
+            
+        config = InferenceConfig()
+
+        class_names = ['BG','Hammer']
+        weights_path = HAMMER_MODEL_PATH
+
+    # Create model object in inference mode.
+    model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
+    model.load_weights(weights_path, by_name=True)
+
+    return model, class_names
+
+def evaluate_mrcnn(model, rgb):
+    start = time.time()
+
+    results = model.detect([rgb], verbose=1)
+    r = results[0]
+    box, mask, classID, score = r['rois'], r['masks'], r['class_ids'], r['scores']                      
+
+    end = time.time()
+    print('MRCNN EXECUTION TIME: ', end - start)
+
+    return box, mask, classID, score
 
 def make_mask(vis):
     CAM_Z = 1.9
@@ -60,63 +130,53 @@ def make_mask(vis):
     ## convert back to matrix
     mask = np.asmatrix(numpy_mask)
 
+    # skimage.io.imshow(np.asmatrix(seg))
     plt.imshow(mask, interpolation='nearest')
     plt.show()
-    # skimage.io.imshow(np.asmatrix(seg))
+
+def look_at_object(vis):
+    CAM_Z = 1.9
+    IMG_SIZE = 224
+    MRCNN_IMG_SIZE = 1024
+
+    model, class_names = setup_mrcnn('hammer')
+
+    objects = YcbObjects('objects/ycb_objects',
+                        mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
+                        mod_stiffness=['Strawberry'])
+    
+    hammer_path = 'objects/ycb_objects/YcbHammer/model.urdf'
+
+    ## camera settings: cam_pos, cam_target, near, far, size, fov
+    center_x, center_y, center_z = 0.05, -0.52, CAM_Z
+
+    camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (IMG_SIZE, IMG_SIZE), 40)
+    # camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (MRCNN_IMG_SIZE, MRCNN_IMG_SIZE), 40)
+    env = Environment(camera, vis=vis, finger_length=0.06)
+
+    env.reset_robot()          
+    env.remove_all_obj()                        
+    
+    # load banana into environment
+    env.load_isolated_obj(hammer_path)
+
+    ## load pile of objects
+    # number_of_objects = 5
+    # objects.shuffle_objects()
+    # info = objects.get_n_first_obj_info(number_of_objects)
+    # env.create_pile(info)
+
+    rgb, _, _ = camera.get_cam_img()
+
+    box, mask, classID, score = evaluate_mrcnn(model, rgb)
+    
+    visualize.display_instances(rgb, box, mask, classID, class_names, score)
 
 def look_at_banana(vis):
     CAM_Z = 1.9
     IMG_SIZE = 224
 
-    def setup_mrcnn():
-        # Directory to save logs and trained model
-        MODEL_DIR = os.path.join(ROOT_DIR, 'logs')
-        # Local path to your trained weights file
-        COCO_MODEL_PATH = os.path.join(ROOT_DIR, 'mrcnn/weights/mask_rcnn_coco.h5')
-
-        class InferenceConfig(coco.CocoConfig):
-            GPU_COUNT = 1
-            IMAGES_PER_GPU = 1
-            
-        config = InferenceConfig()
-
-        class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
-                    'bus', 'train', 'truck', 'boat', 'traffic light',
-                    'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird',
-                    'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear',
-                    'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie',
-                    'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball',
-                    'kite', 'baseball bat', 'baseball glove', 'skateboard',
-                    'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup',
-                    'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
-                    'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza',
-                    'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed',
-                    'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote',
-                    'keyboard', 'cell phone', 'microwave', 'oven', 'toaster',
-                    'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors',
-                    'teddy bear', 'hair drier', 'toothbrush']
-
-        # Create model object in inference mode.
-        model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
-
-        # Load weights trained on the COCO dataset 
-        model.load_weights(COCO_MODEL_PATH, by_name=True)
-
-        return model, class_names
-
-    model, class_names = setup_mrcnn()
-
-    def evaluate():
-        start = time.time()
-
-        results = model.detect([rgb], verbose=1)
-        r = results[0]
-        box, mask, classID, score = r['rois'], r['masks'], r['class_ids'], r['scores']                      
-
-        end = time.time()
-        print('MRCNN EXECUTION TIME: ', end - start)
-
-        return box, mask, classID, score
+    model, class_names = setup_mrcnn('coco')
 
     objects = YcbObjects('objects/ycb_objects',
                         mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
@@ -145,26 +205,10 @@ def look_at_banana(vis):
 
     rgb, _, _ = camera.get_cam_img()
 
-    
-    # for i in range(7):
-    #     start = time.time()
-    #     # path = 'trained_models/Mask_RCNN/images/' + str(i) + '.jpg'
-    #     path = 'images/' + str(i) + '.jpg'
-    #     print(path)
-    #     rgb = skimage.io.imread(path)
-    #     results = model.detect([rgb], verbose=1)
-    #     r = results[0]
-    #     box, mask, classID, score = r['rois'], r['masks'], r['class_ids'], r['scores']
-
-    #     end = time.time()
-    #     print('MRCNN EXECUTION TIME: ', end - start)
-
-    #     visualize.display_instances(rgb, box, mask, classID, class_names, score)
-
     bananaFound = False
     nfNumber = 1
 
-    box, mask, classID, score = evaluate()
+    box, mask, classID, score = evaluate_mrcnn(model, rgb)
 
     while(not bananaFound):
         if (47 in classID):
@@ -192,7 +236,7 @@ def look_at_banana(vis):
 
             rgb, _, _ = camera.get_cam_img()
 
-            box, mask, classID, score = evaluate()
+            box, mask, classID, score = evaluate_mrcnn(model, rgb)
     
     print('NOT FOUND #', nfNumber)
     visualize.display_instances(rgb, box, mask, classID, class_names, score)
@@ -253,7 +297,6 @@ def make_data(vis):
     json_path = save_dir + '/img_data.json'
     with open(json_path, "w") as write:
         json.dump(dict, write)
-
 
 class GrasppingScenarios():
 
@@ -622,7 +665,7 @@ def parse_args():
                         help='Save network output (True/False)')
 
     parser.add_argument('--device', type=str, default='cpu', help='device (cpu/gpu)')
-    parser.add_argument('--vis', type=bool, default=False, help='vis (True/False)')
+    parser.add_argument('--vis', type=bool, default=True, help='vis (True/False)')
     parser.add_argument('--report', type=bool, default=True, help='report (True/False)')
 
                         
@@ -645,7 +688,9 @@ if __name__ == '__main__':
         look_at_banana(vis)
     elif args.command == 'data':
         make_data(vis)
-    else:
+    elif args.command == 'obj':
+        look_at_object(vis)
+    elif args.command == 'grasp':
         grasp = GrasppingScenarios(args.network)
 
         if args.scenario == 'isolated':
