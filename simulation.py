@@ -257,42 +257,49 @@ def make_data(vis):
     dict = {}
 
     train_or_val = 'trial'
-    nr_of_objects = 20
+    nr_of_objects = 1
 
-    obj_name = 'Banana'
+    # obj_name = 'Banana'
+    objects = ['Banana', 'ChipsCan', 'CrackerBox', 'FoamBrick', 'GelatinBox', 'Hammer',
+            'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan',
+            'PowerDrill', 'Scissors', 'Strawberry', 'Tennisball', 'TomatoSoupCan']
 
     save_dir = 'data/' + train_or_val + '/'
     width, height = IMG_SIZE, IMG_SIZE
 
-    ## loop for number of object instances
-    for obj_nr in range(nr_of_objects):
-        env.reset_robot()          
-        env.remove_all_obj()                        
-        env.load_isolated_obj(banana_path)
+    ## loop for objects
+    for obj_name in objects:
+        obj_path = 'objects/ycb_objects/Ycb' + obj_name + '/model.urdf'
 
-        rgb, _, seg = camera.get_cam_img()
+        ## loop for number of object instances
+        for obj_nr in range(nr_of_objects):
+            env.reset_robot()          
+            env.remove_all_obj()                        
+            env.load_isolated_obj(obj_path)
 
-        img_name = obj_name + str(obj_nr) + '.jpg'
-        img_path = save_dir + img_name
+            rgb, _, seg = camera.get_cam_img()
 
-        ## TODO: make id dependent on object name
-        id = 0
+            img_name = obj_name + str(obj_nr) + '.jpg'
+            img_path = save_dir + img_name
 
-        ## use np filter for finding mask coordinates
-        mask_coord = np.where(seg == 6)
+            ## TODO: make id dependent on object name
+            id = 0
 
-        inst = {
-            "name": obj_name + str(obj_nr),
-            "path": img_path,
-            "obj_id": id,
-            "width": width,
-            "height": height,
-            "mask_x": mask_coord[1].tolist(),
-            "mask_y":  mask_coord[0].tolist()        
-        }
+            ## use np filter for finding mask coordinates
+            mask_coord = np.where(seg == 6)
 
-        dict[obj_nr] = inst
-        plt.imsave(img_path, rgb)
+            inst = {
+                "name": obj_name + str(obj_nr),
+                "path": img_path,
+                "obj_id": id,
+                "width": width,
+                "height": height,
+                "mask_x": mask_coord[1].tolist(),
+                "mask_y":  mask_coord[0].tolist()        
+            }
+
+            dict[obj_nr] = inst
+            plt.imsave(img_path, rgb)
     
     json_path = save_dir + '/img_data.json'
     with open(json_path, "w") as write:
