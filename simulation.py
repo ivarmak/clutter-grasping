@@ -245,17 +245,13 @@ def make_data(colab):
     CAM_Z = 1.9
     IMG_SIZE = 224
 
-    # cracker_path = 'objects/ycb_objects/YcbCrackerBox/model.urdf'
-    # hammer_path = 'objects/ycb_objects/YcbHammer/model.urdf'
-    # banana_path = 'objects/ycb_objects/YcbBanana/model.urdf'
-
     ## camera settings: cam_pos, cam_target, near, far, size, fov
     center_x, center_y, center_z = 0.05, -0.52, CAM_Z
     camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (IMG_SIZE, IMG_SIZE), 40)
     env = Environment(camera, vis=False, finger_length=0.06)
 
-    train_or_val = 'val'
-    nr_of_objects = 16
+    train_or_val = 'trial'
+    nr_of_objects = 1
 
     object_names = ['Banana', 'ChipsCan', 'CrackerBox', 'FoamBrick', 'GelatinBox', 'Hammer', 
                 'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan', 'PowerDrill', 
@@ -687,13 +683,14 @@ if __name__ == '__main__':
     device=args.device
     vis=args.vis
     report=args.report
+    colab=args.colab
     
     if args.command == 'mask':
         make_mask(vis)
     elif args.command == 'banana':
         look_at_banana(vis)
     elif args.command == 'data':
-        make_data(vis)
+        make_data(colab)
     elif args.command == 'obj':
         look_at_object(vis)
     elif args.command == 'grasp':
