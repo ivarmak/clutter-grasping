@@ -13,6 +13,7 @@ import math
 import matplotlib.pyplot as plt
 import time
 import skimage.io
+import random
 
 from mrcnn.config import Config
 from mrcnn import utils
@@ -251,7 +252,7 @@ def make_data(colab):
     env = Environment(camera, vis=False, finger_length=0.06)
 
     train_or_val = 'trial'
-    nr_of_objects = 1
+    nr_of_objects = 20
 
     object_names = ['Banana', 'ChipsCan', 'CrackerBox', 'FoamBrick', 'GelatinBox', 'Hammer', 
                 'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan', 'PowerDrill', 
@@ -269,8 +270,12 @@ def make_data(colab):
         ## loop for number of object instances
         for obj_nr in range(nr_of_objects):
             env.reset_robot()          
-            env.remove_all_obj()                        
-            env.load_isolated_obj(obj_path)
+            env.remove_all_obj()
+
+            ## added to make objects turn randomly
+            pitch = bool(random.getrandbits(1))
+            roll = bool(random.getrandbits(1))
+            env.load_turnable_obj(obj_path, pitch, roll)
 
             rgb, _, seg = camera.get_cam_img()
 
@@ -298,6 +303,39 @@ def make_data(colab):
     json_path = save_dir + '/' + train_or_val + '_img_data.json'
     with open(json_path, "w") as write:
         json.dump(dict, write)
+
+def turn_object():
+    CAM_Z = 1.9
+    IMG_SIZE = 1024
+
+    # objects = YcbObjects('objects/ycb_objects',
+    #                     mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
+    #                     mod_stiffness=['Strawberry'])
+
+    ## camera settings: cam_pos, cam_target, near, far, size, fov
+    center_x, center_y, center_z = 0.05, -0.52, CAM_Z
+    camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (IMG_SIZE, IMG_SIZE), 40)
+    env = Environment(camera, vis=True, finger_length=0.06)
+
+    # obj_path = 'objects/ycb_objects/YcbChipsCan/model.urdf'
+    objects = ['ChipsCan', 'CrackerBox', 'GelatinBox', 'MasterChefCan', 'MustardBottle', 'PottedMeatCan',
+            'PowerDrill', 'TomatoSoupCan']
+    i = 0
+    while(True):
+        obj_path = 'objects/ycb_objects/Ycb' + objects[i] + '/model.urdf'
+        for _ in range(10):
+            env.reset_robot()          
+            env.remove_all_obj()
+
+            pitch = bool(random.getrandbits(1))
+            roll = bool(random.getrandbits(1))
+            
+            env.load_turnable_obj(obj_path, pitch, roll)
+
+            for _ in range(20):
+                    p.stepSimulation()
+        i+=1
+
 
 class GrasppingScenarios():
 
@@ -693,6 +731,8 @@ if __name__ == '__main__':
         make_data(colab)
     elif args.command == 'obj':
         look_at_object(vis)
+    elif args.command == 'turn':
+        turn_object()
     elif args.command == 'grasp':
         grasp = GrasppingScenarios(args.network)
 

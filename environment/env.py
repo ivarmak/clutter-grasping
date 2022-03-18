@@ -405,6 +405,58 @@ class Environment:
         self.obj_orientations.append(orn)
         return obj_id, pos, orn
 
+    def load_turned_obj(self, path, pos, yaw, roll=0, pitch=0, mod_orn=False, mod_stiffness=False):
+        orn = p.getQuaternionFromEuler([roll, pitch, yaw])
+        obj_id = p.loadURDF(path, pos, orn)
+        # adjust position according to height
+        aabb = p.getAABB(obj_id, -1)
+        if mod_orn:
+            minm, maxm = aabb[0][1], aabb[1][1]
+            orn = p.getQuaternionFromEuler([0, np.pi*0.5, yaw])
+        else:
+            minm, maxm = aabb[0][2], aabb[1][2]
+
+        pos[2] += (maxm - minm) / 2
+        p.resetBasePositionAndOrientation(obj_id, pos, orn)
+        # change dynamics
+        if mod_stiffness:
+            p.changeDynamics(obj_id,
+                             -1, lateralFriction=1,
+                             rollingFriction=0.001,
+                             spinningFriction=0.002,
+                             restitution=0.01,
+                             contactStiffness=100000,
+                             contactDamping=0.0)
+        else:
+            p.changeDynamics(obj_id,
+                             -1, lateralFriction=1,
+                             rollingFriction=0.002,
+                             spinningFriction=0.001,
+                             restitution=0.01)
+        self.obj_ids.append(obj_id)
+        self.obj_positions.append(pos)
+        self.obj_orientations.append(orn)
+        return obj_id, pos, orn
+
+    def load_turnable_obj(self, path, pitchBool=False, rollBool=False, mod_orn=False, mod_stiffness=False):
+        r_x = random.uniform(
+            self.obj_init_pos[0] - 0.1, self.obj_init_pos[0] + 0.1)
+        r_y = random.uniform(
+            self.obj_init_pos[1] - 0.1, self.obj_init_pos[1] + 0.1)
+        yaw = random.uniform(0, np.pi)
+        if pitchBool: pitch = random.uniform(0, np.pi) ## roll powerdrill over boorkop
+        else: pitch = 0
+        if rollBool: roll = random.uniform(0, np.pi) ## roll powerdrill over zijkant
+        else: roll = 0                         
+
+        pos = [r_x, r_y, self.Z_TABLE_TOP]
+        obj_id, _, _ = self.load_turned_obj(path, pos, yaw, roll, pitch, mod_orn, mod_stiffness)
+        for _ in range(100):
+            self.step_simulation()
+            
+        self.wait_until_still(obj_id)
+        self.update_obj_states()
+
     def load_isolated_obj(self, path, mod_orn=False, mod_stiffness=False):
         r_x = random.uniform(
             self.obj_init_pos[0] - 0.1, self.obj_init_pos[0] + 0.1)
