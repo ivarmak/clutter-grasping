@@ -241,7 +241,7 @@ def look_at_banana(vis):
     print('NOT FOUND #', nfNumber)
     visualize.display_instances(rgb, box, mask, classID, class_names, score)
 
-def make_data(vis):
+def make_data(colab):
     CAM_Z = 1.9
     IMG_SIZE = 224
 
@@ -252,7 +252,7 @@ def make_data(vis):
     ## camera settings: cam_pos, cam_target, near, far, size, fov
     center_x, center_y, center_z = 0.05, -0.52, CAM_Z
     camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (IMG_SIZE, IMG_SIZE), 40)
-    env = Environment(camera, vis=vis, finger_length=0.06)
+    env = Environment(camera, vis=False, finger_length=0.06)
 
     train_or_val = 'val'
     nr_of_objects = 16
@@ -280,13 +280,15 @@ def make_data(vis):
 
             img_name = obj_name + str(obj_nr)
             img_path = save_dir + img_name + '.jpg'
+            if (colab): load_path = 'drive/MyDrive/scriptie/' + img_path
+            else: load_path = img_path
 
             ## use np filter for finding mask coordinates (mask value is int 6)
             mask_coord = np.where(seg == 6)
 
             inst = {
                 "name": img_name,
-                "path": img_path,
+                "path": load_path,
                 "obj_id": id,
                 "width": width,
                 "height": height,
@@ -670,6 +672,7 @@ def parse_args():
     parser.add_argument('--device', type=str, default='cpu', help='device (cpu/gpu)')
     parser.add_argument('--vis', type=bool, default=False, help='vis (True/False)')
     parser.add_argument('--report', type=bool, default=True, help='report (True/False)')
+    parser.add_argument('--colab', type=bool, default=True, help='colab (True/False)')
 
                         
     args = parser.parse_args()
