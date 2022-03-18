@@ -247,29 +247,28 @@ def make_data(vis):
 
     # cracker_path = 'objects/ycb_objects/YcbCrackerBox/model.urdf'
     # hammer_path = 'objects/ycb_objects/YcbHammer/model.urdf'
-    banana_path = 'objects/ycb_objects/YcbBanana/model.urdf'
+    # banana_path = 'objects/ycb_objects/YcbBanana/model.urdf'
 
     ## camera settings: cam_pos, cam_target, near, far, size, fov
     center_x, center_y, center_z = 0.05, -0.52, CAM_Z
     camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (IMG_SIZE, IMG_SIZE), 40)
     env = Environment(camera, vis=vis, finger_length=0.06)
 
+    train_or_val = 'val'
+    nr_of_objects = 16
+
+    object_names = ['Banana', 'ChipsCan', 'CrackerBox', 'FoamBrick', 'GelatinBox', 'Hammer', 
+                'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan', 'PowerDrill', 
+                'Scissors', 'Strawberry', 'TennisBall', 'TomatoSoupCan']
     dict = {}
-
-    train_or_val = 'trial'
-    nr_of_objects = 1
-
-    # obj_name = 'Banana'
-    objects = ['Banana', 'ChipsCan', 'CrackerBox', 'FoamBrick', 'GelatinBox', 'Hammer',
-            'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan',
-            'PowerDrill', 'Scissors', 'Strawberry', 'Tennisball', 'TomatoSoupCan']
-
     save_dir = 'data/' + train_or_val + '/'
     width, height = IMG_SIZE, IMG_SIZE
 
-    ## loop for objects
-    for obj_name in objects:
+
+    for obj_name in object_names:
+        print(obj_name)
         obj_path = 'objects/ycb_objects/Ycb' + obj_name + '/model.urdf'
+        id = object_names.index(obj_name) + 1
 
         ## loop for number of object instances
         for obj_nr in range(nr_of_objects):
@@ -279,17 +278,14 @@ def make_data(vis):
 
             rgb, _, seg = camera.get_cam_img()
 
-            img_name = obj_name + str(obj_nr) + '.jpg'
-            img_path = save_dir + img_name
+            img_name = obj_name + str(obj_nr)
+            img_path = save_dir + img_name + '.jpg'
 
-            ## TODO: make id dependent on object name
-            id = 0
-
-            ## use np filter for finding mask coordinates
+            ## use np filter for finding mask coordinates (mask value is int 6)
             mask_coord = np.where(seg == 6)
 
             inst = {
-                "name": obj_name + str(obj_nr),
+                "name": img_name,
                 "path": img_path,
                 "obj_id": id,
                 "width": width,
@@ -298,10 +294,10 @@ def make_data(vis):
                 "mask_y":  mask_coord[0].tolist()        
             }
 
-            dict[obj_nr] = inst
+            dict[id + obj_nr] = inst
             plt.imsave(img_path, rgb)
-    
-    json_path = save_dir + '/img_data.json'
+            
+    json_path = save_dir + '/' + train_or_val + '_img_data.json'
     with open(json_path, "w") as write:
         json.dump(dict, write)
 
@@ -672,7 +668,7 @@ def parse_args():
                         help='Save network output (True/False)')
 
     parser.add_argument('--device', type=str, default='cpu', help='device (cpu/gpu)')
-    parser.add_argument('--vis', type=bool, default=True, help='vis (True/False)')
+    parser.add_argument('--vis', type=bool, default=False, help='vis (True/False)')
     parser.add_argument('--report', type=bool, default=True, help='report (True/False)')
 
                         
