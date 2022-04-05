@@ -24,12 +24,12 @@ from mrcnn.coco import coco
 # Root directory of the project
 ROOT_DIR = os.path.abspath('/home/ivar/Documents/Thesis/clutterbot/')
 
-def setup_mrcnn(weights):
+def setup_mrcnn(weights, weights_name):
     # Directory to save logs and trained model
     MODEL_DIR = os.path.join(ROOT_DIR, 'logs')
     # Local path to your trained weights file
     COCO_MODEL_PATH = os.path.join(ROOT_DIR, 'mrcnn/weights/mask_rcnn_coco.h5')
-    HAMMER_MODEL_PATH = os.path.join(ROOT_DIR, 'mrcnn/weights/mask_rcnn_hammer_0010.h5')
+    CUSTOM_MODEL_PATH = os.path.join(ROOT_DIR, 'mrcnn/weights/' + weights_name + '.h5')
 
     if weights == 'coco':
         class InferenceConfig(coco.CocoConfig):
@@ -55,13 +55,13 @@ def setup_mrcnn(weights):
                     'teddy bear', 'hair drier', 'toothbrush']
         weights_path = COCO_MODEL_PATH
 
-    elif weights == 'hammer':
+    elif weights == 'custom':
         class CustomConfig(Config):
             NAME = "object"
             IMAGES_PER_GPU = 1              # Adjust down if you use a smaller GPU.
-            NUM_CLASSES = 1 + 1             # Background + Hammer   
+            NUM_CLASSES = 1 + 16             # Background + Hammer   
             STEPS_PER_EPOCH = 100           # Number of training steps per epoch
-            DETECTION_MIN_CONFIDENCE = 0.9  # Skip detections with < 90% confidence
+            DETECTION_MIN_CONFIDENCE = 0.5  # Skip detections with < 90% confidence
 
         config = CustomConfig()
 
@@ -72,8 +72,11 @@ def setup_mrcnn(weights):
             
         config = InferenceConfig()
 
-        class_names = ['BG','Hammer']
-        weights_path = HAMMER_MODEL_PATH
+        class_names = ['BG', 'Banana', 'ChipsCan', 'CrackerBox', 'FoamBrick', 'GelatinBox', 'Hammer', 
+                'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan', 'PowerDrill', 
+                'Scissors', 'Strawberry', 'TennisBall', 'TomatoSoupCan']
+
+        weights_path = CUSTOM_MODEL_PATH
 
     # Create model object in inference mode.
     model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
@@ -138,46 +141,63 @@ def make_mask(vis):
 def look_at_object(vis):
     CAM_Z = 1.9
     IMG_SIZE = 224
-    MRCNN_IMG_SIZE = 1024
+    MRCNN_IMG_SIZE = 448
 
-    model, class_names = setup_mrcnn('hammer')
+    weights = 'bestMRCNN_1000st_20ep_augSeg_gt1_val0.19'
+    weights2 = 'MRCNN_st300_20ep_augSeq_GT1_val0.18'
+    weights3 = 'mask_rcnn_object_0032'
+
+    model, class_names = setup_mrcnn('custom', weights3)
 
     objects = YcbObjects('objects/ycb_objects',
                         mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
                         mod_stiffness=['Strawberry'])
-    
-    hammer_path = 'objects/ycb_objects/YcbHammer/model.urdf'
+
+    names = ['BG', 'Banana', 'ChipsCan', 'CrackerBox', 'FoamBrick', 'GelatinBox', 'Hammer', 
+                'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan', 'PowerDrill', 
+                'Scissors', 'Strawberry', 'TennisBall', 'TomatoSoupCan']
+
+    obj = 'Scissors'
+
+    obj_path = 'objects/ycb_objects/Ycb' + obj + '/model.urdf'
 
     ## camera settings: cam_pos, cam_target, near, far, size, fov
     center_x, center_y, center_z = 0.05, -0.52, CAM_Z
 
-    camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (IMG_SIZE, IMG_SIZE), 40)
-    # camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (MRCNN_IMG_SIZE, MRCNN_IMG_SIZE), 40)
-    env = Environment(camera, vis=vis, finger_length=0.06)
+    # camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (IMG_SIZE, IMG_SIZE), 40)
+    camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (MRCNN_IMG_SIZE, MRCNN_IMG_SIZE), 40)
+    env = Environment(camera, vis=False, finger_length=0.06)
 
     env.reset_robot()          
     env.remove_all_obj()                        
     
-    # load banana into environment
-    env.load_isolated_obj(hammer_path)
+    # load object into environment
+    # env.load_isolated_obj(obj_path)
+
+    # load turned object
+    # pitch = bool(random.getrandbits(1))
+    # roll = bool(random.getrandbits(1))
+    # env.load_turnable_obj(obj_path, pitch, roll)
 
     ## load pile of objects
-    # number_of_objects = 5
-    # objects.shuffle_objects()
-    # info = objects.get_n_first_obj_info(number_of_objects)
+    number_of_objects = 5
+    objects.shuffle_objects()
+    info = objects.get_n_first_obj_info(number_of_objects)
+
+    env.create_packed(info)
     # env.create_pile(info)
 
     rgb, _, _ = camera.get_cam_img()
 
     box, mask, classID, score = evaluate_mrcnn(model, rgb)
-    
+    # print(classID)
     visualize.display_instances(rgb, box, mask, classID, class_names, score)
 
 def look_at_banana(vis):
     CAM_Z = 1.9
     IMG_SIZE = 224
 
-    model, class_names = setup_mrcnn('coco')
+    model, class_names = setup_mrcnn('coco', 'coco')
 
     objects = YcbObjects('objects/ycb_objects',
                         mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
@@ -244,7 +264,7 @@ def look_at_banana(vis):
 
 def make_data(colab):
     CAM_Z = 1.9
-    IMG_SIZE = 224
+    IMG_SIZE = 448
 
     ## camera settings: cam_pos, cam_target, near, far, size, fov
     center_x, center_y, center_z = 0.05, -0.52, CAM_Z
@@ -252,15 +272,22 @@ def make_data(colab):
     env = Environment(camera, vis=False, finger_length=0.06)
 
     train_or_val = 'trial'
-    nr_of_objects = 20
+    nr_of_objects = 5
 
-    object_names = ['Banana', 'ChipsCan', 'CrackerBox', 'FoamBrick', 'GelatinBox', 'Hammer', 
+    object_names = ['Banana', 'ChipsCan', 'CrackerBox', 'FoamBrick', 'GelatinBox', 'Hammer',
                 'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan', 'PowerDrill', 
                 'Scissors', 'Strawberry', 'TennisBall', 'TomatoSoupCan']
+            
     dict = {}
     save_dir = 'data/' + train_or_val + '/'
     width, height = IMG_SIZE, IMG_SIZE
 
+    def no_object_found():
+        _ , depth, _ = camera.get_cam_img()
+        if (depth.max()- depth.min() < 0.0025):
+            return True
+        else:
+            return False  
 
     for obj_name in object_names:
         print(obj_name)
@@ -269,15 +296,25 @@ def make_data(colab):
 
         ## loop for number of object instances
         for obj_nr in range(nr_of_objects):
+        
             env.reset_robot()          
             env.remove_all_obj()
 
-            ## added to make objects turn randomly
+            ## make objects turn randomly
             pitch = bool(random.getrandbits(1))
             roll = bool(random.getrandbits(1))
             env.load_turnable_obj(obj_path, pitch, roll)
 
+            ## fix for scissors that bounce of the table
+            if(obj_name == 'Scissors'):
+                for _ in range(20):
+                        p.stepSimulation()
+                if(no_object_found()):
+                    env.remove_all_obj()
+                    env.load_turnable_obj(obj_path, pitch, roll)
+                
             rgb, _, seg = camera.get_cam_img()
+
 
             img_name = obj_name + str(obj_nr)
             img_path = save_dir + img_name + '.jpg'
@@ -293,12 +330,12 @@ def make_data(colab):
                 "obj_id": id,
                 "width": width,
                 "height": height,
-                "mask_x": mask_coord[1].tolist(),
-                "mask_y":  mask_coord[0].tolist()        
+                # "mask_x": mask_coord[1].tolist(),
+                # "mask_y":  mask_coord[0].tolist()        
             }
 
-            dict[id + obj_nr] = inst
-            plt.imsave(img_path, rgb)
+            dict[img_name] = inst
+            # plt.imsave(img_path, rgb)
             
     json_path = save_dir + '/' + train_or_val + '_img_data.json'
     with open(json_path, "w") as write:
@@ -317,13 +354,21 @@ def turn_object():
     camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (IMG_SIZE, IMG_SIZE), 40)
     env = Environment(camera, vis=True, finger_length=0.06)
 
+    def no_object_found():
+        rgb, depth, _ = camera.get_cam_img()
+        if (depth.max()- depth.min() < 0.0025):
+            return True
+        else:
+            return False  
+
     # obj_path = 'objects/ycb_objects/YcbChipsCan/model.urdf'
-    objects = ['ChipsCan', 'CrackerBox', 'GelatinBox', 'MasterChefCan', 'MustardBottle', 'PottedMeatCan',
-            'PowerDrill', 'TomatoSoupCan']
+    # objects = ['ChipsCan', 'CrackerBox', 'GelatinBox', 'MasterChefCan', 'MustardBottle', 'PottedMeatCan',
+    #         'PowerDrill', 'TomatoSoupCan']
+    objects = ['Scissors']
     i = 0
     while(True):
         obj_path = 'objects/ycb_objects/Ycb' + objects[i] + '/model.urdf'
-        for _ in range(10):
+        for _ in range(50):
             env.reset_robot()          
             env.remove_all_obj()
 
@@ -334,8 +379,9 @@ def turn_object():
 
             for _ in range(20):
                     p.stepSimulation()
+            if(no_object_found()):
+                print("EMPTY DESK")
         i+=1
-
 
 class GrasppingScenarios():
 
@@ -704,7 +750,7 @@ def parse_args():
                         help='Save network output (True/False)')
 
     parser.add_argument('--device', type=str, default='cpu', help='device (cpu/gpu)')
-    parser.add_argument('--vis', type=bool, default=False, help='vis (True/False)')
+    parser.add_argument('--vis', type=bool, default=True, help='vis (True/False)')
     parser.add_argument('--report', type=bool, default=True, help='report (True/False)')
     parser.add_argument('--colab', type=bool, default=True, help='colab (True/False)')
 
