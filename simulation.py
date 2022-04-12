@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import time
 import skimage.io
 import random
+from PIL import Image
 
 from mrcnn.config import Config
 from mrcnn import utils
@@ -29,7 +30,7 @@ def setup_mrcnn(weights, weights_name):
     MODEL_DIR = os.path.join(ROOT_DIR, 'logs')
     # Local path to your trained weights file
     COCO_MODEL_PATH = os.path.join(ROOT_DIR, 'mrcnn/weights/mask_rcnn_coco.h5')
-    CUSTOM_MODEL_PATH = os.path.join(ROOT_DIR, 'mrcnn/weights/' + weights_name + '.h5')
+    CUSTOM_MODEL_PATH = os.path.join(ROOT_DIR, 'mrcnn/weights/' + weights_name)
 
     if weights == 'coco':
         class InferenceConfig(coco.CocoConfig):
@@ -146,8 +147,9 @@ def look_at_object(vis):
     weights = 'bestMRCNN_1000st_20ep_augSeg_gt1_val0.19'
     weights2 = 'MRCNN_st300_20ep_augSeq_GT1_val0.18'
     weights3 = 'mask_rcnn_object_0032'
+    weights4 = 'rand/rand_4000st/weights.bestVal=0.22.hdf5'
 
-    model, class_names = setup_mrcnn('custom', weights3)
+    model, class_names = setup_mrcnn('custom', weights4)
 
     objects = YcbObjects('objects/ycb_objects',
                         mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
@@ -184,8 +186,8 @@ def look_at_object(vis):
     objects.shuffle_objects()
     info = objects.get_n_first_obj_info(number_of_objects)
 
-    env.create_packed(info)
-    # env.create_pile(info)
+    # env.create_packed(info)
+    env.create_pile(info)
 
     rgb, _, _ = camera.get_cam_img()
 
@@ -262,7 +264,7 @@ def look_at_banana(vis):
     print('NOT FOUND #', nfNumber)
     visualize.display_instances(rgb, box, mask, classID, class_names, score)
 
-def make_data(colab):
+def make_data(colab, background):
     CAM_Z = 1.9
     IMG_SIZE = 448
 
@@ -271,14 +273,15 @@ def make_data(colab):
     camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (IMG_SIZE, IMG_SIZE), 40)
     env = Environment(camera, vis=False, finger_length=0.06)
 
-    train_or_val = 'trial'
-    nr_of_objects = 5
+    train_or_val = 'val'
+    nr_of_objects = 25
 
     object_names = ['Banana', 'ChipsCan', 'CrackerBox', 'FoamBrick', 'GelatinBox', 'Hammer',
                 'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan', 'PowerDrill', 
                 'Scissors', 'Strawberry', 'TennisBall', 'TomatoSoupCan']
-            
+
     dict = {}
+    texture_path = 'images/textures/use/'
     save_dir = 'data/' + train_or_val + '/'
     width, height = IMG_SIZE, IMG_SIZE
 
@@ -291,7 +294,7 @@ def make_data(colab):
 
     for obj_name in object_names:
         print(obj_name)
-        obj_path = 'objects/ycb_objects/Ycb' + obj_name + '/model.urdf'
+        obj_path = 'objects/ycb_objects/Ycb{}/model.urdf'.format(obj_name)
         id = object_names.index(obj_name) + 1
 
         ## loop for number of object instances
@@ -330,12 +333,31 @@ def make_data(colab):
                 "obj_id": id,
                 "width": width,
                 "height": height,
-                # "mask_x": mask_coord[1].tolist(),
-                # "mask_y":  mask_coord[0].tolist()        
+                "mask_x": mask_coord[1].tolist(),
+                "mask_y":  mask_coord[0].tolist()        
             }
 
             dict[img_name] = inst
-            # plt.imsave(img_path, rgb)
+
+            if(background=='jitter'):
+                ## Initialize randomized RGB value, paste masked image, save
+                imarray = np.random.rand(448,448,3) * 255
+                imarray[mask_coord[0],mask_coord[1]] = rgb[mask_coord[0],mask_coord[1]]
+                im = Image.fromarray(imarray.astype('uint8'))
+                im.save(img_path)
+
+            elif(background=='texture'):
+                ## Add random texture as background, paste masked image, save
+                im_name = random.choice(os.listdir('images/textures/use'))
+                texture = Image.open(texture_path + im_name)
+                resized = np.asarray(texture.resize((448,448)))
+                resized[mask_coord[0],mask_coord[1]] = rgb[mask_coord[0],mask_coord[1]]
+                im = Image.fromarray(resized.astype('uint8'))
+                im.save(img_path)
+
+            else:
+                ## Standard image saving
+                plt.imsave(img_path, rgb)
             
     json_path = save_dir + '/' + train_or_val + '_img_data.json'
     with open(json_path, "w") as write:
@@ -753,6 +775,7 @@ def parse_args():
     parser.add_argument('--vis', type=bool, default=True, help='vis (True/False)')
     parser.add_argument('--report', type=bool, default=True, help='report (True/False)')
     parser.add_argument('--colab', type=bool, default=True, help='colab (True/False)')
+    parser.add_argument('--background', type=str, default='plain', help='colab (True/False)')
 
                         
     args = parser.parse_args()
@@ -768,13 +791,14 @@ if __name__ == '__main__':
     vis=args.vis
     report=args.report
     colab=args.colab
+    background = args.background
     
     if args.command == 'mask':
         make_mask(vis)
     elif args.command == 'banana':
         look_at_banana(vis)
     elif args.command == 'data':
-        make_data(colab)
+        make_data(colab, background)
     elif args.command == 'obj':
         look_at_object(vis)
     elif args.command == 'turn':
