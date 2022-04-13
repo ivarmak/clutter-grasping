@@ -274,7 +274,7 @@ def make_data(colab, background):
     env = Environment(camera, vis=False, finger_length=0.06)
 
     train_or_val = 'val'
-    nr_of_objects = 25
+    nr_of_objects = 37
 
     object_names = ['Banana', 'ChipsCan', 'CrackerBox', 'FoamBrick', 'GelatinBox', 'Hammer',
                 'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan', 'PowerDrill', 
