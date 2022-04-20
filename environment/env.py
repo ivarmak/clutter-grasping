@@ -472,6 +472,19 @@ class Environment:
         self.wait_until_still(obj_id)
         self.update_obj_states()
 
+    def load_obj_same_place(self, path, mod_orn=False, mod_stiffness=False):
+        x = 0.07004307157740353
+        y = -0.5090073503787834
+        yaw = 2.0268441312371794
+
+        pos = [x, y, self.Z_TABLE_TOP]
+        obj_id, _, _ = self.load_obj(path, pos, yaw, mod_orn, mod_stiffness)
+        for _ in range(100):
+            self.step_simulation()
+            
+        self.wait_until_still(obj_id)
+        self.update_obj_states()
+
     def create_temp_box(self, width, num):
         box_width = width
         box_height = 0.2

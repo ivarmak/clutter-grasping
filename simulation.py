@@ -25,7 +25,78 @@ from mrcnn.coco import coco
 # Root directory of the project
 ROOT_DIR = os.path.abspath('/home/ivar/Documents/Thesis/clutterbot/')
 
-def setup_mrcnn(weights, weights_name):
+def drawBox():
+    XMIN, XMAX, YMIN, YMAX = [-0.35, 0.45, -0.92, -0.12]
+    CAM_Z = 1.9
+    BLUE = [0,0,1]
+    RED = [1,0,1]
+    GREEN = [0,1,0]
+    YELLOW = [1,1,0]
+    Z = 0.785 # height of workspace thus z variable line
+
+    def convert_to_ws(box, img_size = 448):
+        y1, x1, y2, x2 = box
+
+        newy1 = (((y1 / img_size) * 0.8) + abs(YMAX))*-1
+        newy2 = (((y2 / img_size) * 0.8) + abs(YMAX))*-1
+        newx1 = ((x1 / img_size) * 0.8) - abs(XMIN)
+        newx2 = ((x2 / img_size) * 0.8) - abs(XMIN)
+
+        return newy1, newx1, newy2, newx2
+    
+    def draw_box(box, z, color):
+        y1, x1, y2, x2 = box
+        lines = []
+
+        lines.append(p.addUserDebugLine([x1, y1, z], [x1, y2, z], color, lineWidth=5))
+        lines.append(p.addUserDebugLine([x2, y1, z], [x2, y2, z], color, lineWidth=5))
+        lines.append(p.addUserDebugLine([x1, y1, z], [x2, y1, z], color, lineWidth=5))
+        lines.append(p.addUserDebugLine([x1, y2, z], [x2, y2, z], color, lineWidth=5))
+
+        return lines
+    
+    drawingBox = []
+
+    model, class_names = setup_mrcnn('custom', 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5', 0.7)
+    banana_path = 'objects/ycb_objects/YcbBanana/model.urdf'
+
+    center_x, center_y, center_z = 0.05, -0.52, CAM_Z
+    MRCNN_IMG_SIZE = 448
+    camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (MRCNN_IMG_SIZE, MRCNN_IMG_SIZE), 40)
+    env = Environment(camera, vis=vis, finger_length=0.06)
+
+
+    for _ in range(10):
+        env.reset_robot()          
+        env.remove_all_obj()
+        # env.load_obj_same_place(banana_path)
+        env.load_isolated_obj(banana_path)
+
+        rgb, _, _ = camera.get_cam_img()
+        box, mask, classID, score = evaluate_mrcnn(model, rgb)
+    
+        
+        bestBox = box[0]
+        
+        drawingBox = convert_to_ws(bestBox)
+        
+        lines = draw_box(drawingBox, Z , BLUE)
+        for _ in range(20):
+            p.stepSimulation()
+
+    # visualize.display_instances(rgb, box, mask, classID, class_names, score)
+
+
+
+
+    # while(True):
+    #     pass
+
+    # def remove_drawing(self,lineIDs):
+    #     for line in lineIDs:
+    #         p.removeUserDebugItem(line)
+
+def setup_mrcnn(weights, weights_name, conf = 0.9):
     # Directory to save logs and trained model
     MODEL_DIR = os.path.join(ROOT_DIR, 'logs')
     # Local path to your trained weights file
@@ -69,7 +140,7 @@ def setup_mrcnn(weights, weights_name):
         class InferenceConfig(config.__class__):
             GPU_COUNT = 1
             IMAGES_PER_GPU = 1
-            DETECTION_MIN_CONFIDENCE = 0.7
+            DETECTION_MIN_CONFIDENCE = conf
             
         config = InferenceConfig()
 
@@ -88,7 +159,7 @@ def setup_mrcnn(weights, weights_name):
 def evaluate_mrcnn(model, rgb):
     start = time.time()
 
-    results = model.detect([rgb], verbose=1)
+    results = model.detect([rgb], verbose=0)
     r = results[0]
     box, mask, classID, score = r['rois'], r['masks'], r['class_ids'], r['scores']                      
 
@@ -199,7 +270,7 @@ def look_at_banana(vis):
     CAM_Z = 1.9
     IMG_SIZE = 224
 
-    model, class_names = setup_mrcnn('coco', 'coco')
+    model, class_names = setup_mrcnn('custom', 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5')
 
     objects = YcbObjects('objects/ycb_objects',
                         mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
@@ -211,57 +282,71 @@ def look_at_banana(vis):
     center_x, center_y, center_z = 0.05, -0.52, CAM_Z
     # camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (self.IMG_SIZE, self.IMG_SIZE), 40)
     
-    MRCNN_IMG_SIZE = 1024
+    MRCNN_IMG_SIZE = 448
     camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (MRCNN_IMG_SIZE, MRCNN_IMG_SIZE), 40)
     env = Environment(camera, vis=vis, finger_length=0.06)
+    
+    # env.reset_robot()          
+    # env.remove_all_obj()                        
+    
+    # # load banana into environment
+    # env.load_isolated_obj(banana_path)
 
-    env.reset_robot()          
-    env.remove_all_obj()                        
+    # number_of_objects = 5
+    # # objects.shuffle_objects()
+    # # info = objects.get_n_first_obj_info(number_of_objects)
+    # # env.create_pile(info)
+
+    # rgb, _, _ = camera.get_cam_img()
+
+    # bananaFound = False
+    # nfNumber = 1
+
+    # box, mask, classID, score = evaluate_mrcnn(model, rgb)
+
+    while(True):
+        env.reset_robot()          
+        env.remove_all_obj()
+        env.load_isolated_obj(banana_path)
+
+        rgb, _, _ = camera.get_cam_img()   
+        box, mask, classID, score = evaluate_mrcnn(model, rgb)
+        print(box)
+        visualize.display_instances(rgb, box, mask, classID, class_names, score)
+                     
     
     # load banana into environment
-    env.load_isolated_obj(banana_path)
+    # env.load_isolated_obj(banana_path)
 
-    number_of_objects = 5
-    # objects.shuffle_objects()
-    # info = objects.get_n_first_obj_info(number_of_objects)
-    # env.create_pile(info)
+    # while(not bananaFound):
+    #     if (47 in classID):
+    #         print('BANANA FOUND')
+    #         bananaFound = True
 
-    rgb, _, _ = camera.get_cam_img()
+    #         result = np.where(classID == 47)
+    #         index = result[0][0]
+    #         print('index: ', index)
+    #         # terminaloutput>> index:  (array([3]),)
+    #         # pak eerste output: result = np.where(classID == 47) \ index = result[0][0]
+    #         # https://thispointer.com/find-the-index-of-a-value-in-numpy-array/
+    #     else:
+    #         print('NOT FOUND, starting again')
 
-    bananaFound = False
-    nfNumber = 1
-
-    box, mask, classID, score = evaluate_mrcnn(model, rgb)
-
-    while(not bananaFound):
-        if (47 in classID):
-            print('BANANA FOUND')
-            bananaFound = True
-
-            result = np.where(classID == 47)
-            index = result[0][0]
-            print('index: ', index)
-            # terminaloutput>> index:  (array([3]),)
-            # pak eerste output: result = np.where(classID == 47) \ index = result[0][0]
-            # https://thispointer.com/find-the-index-of-a-value-in-numpy-array/
-        else:
-            print('NOT FOUND, starting again')
-
-            # visualize.display_instances(rgb, box, mask, classID, class_names, score, title='notfound ' + str(nfNumber))
+    #         # visualize.display_instances(rgb, box, mask, classID, class_names, score, title='notfound ' + str(nfNumber))
             
-            nfNumber += 1
+    #         nfNumber += 1
 
-            env.reset_robot()          
-            env.remove_all_obj()
-            objects.shuffle_objects()
-            info = objects.get_n_first_obj_info(number_of_objects)
-            env.create_pile(info)
+    #         env.reset_robot()          
+    #         env.remove_all_obj()
+    #         objects.shuffle_objects()
+    #         info = objects.get_n_first_obj_info(number_of_objects)
+    #         env.create_pile(info)
 
-            rgb, _, _ = camera.get_cam_img()
+    #         rgb, _, _ = camera.get_cam_img()
 
-            box, mask, classID, score = evaluate_mrcnn(model, rgb)
+    #         box, mask, classID, score = evaluate_mrcnn(model, rgb)
     
-    print('NOT FOUND #', nfNumber)
+    # print('NOT FOUND #', nfNumber)
     visualize.display_instances(rgb, box, mask, classID, class_names, score)
 
 def make_data(colab, background):
@@ -803,6 +888,8 @@ if __name__ == '__main__':
         look_at_object(vis)
     elif args.command == 'turn':
         turn_object()
+    elif args.command == 'box':
+        drawBox()
     elif args.command == 'grasp':
         grasp = GrasppingScenarios(args.network)
 
