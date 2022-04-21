@@ -25,76 +25,32 @@ from mrcnn.coco import coco
 # Root directory of the project
 ROOT_DIR = os.path.abspath('/home/ivar/Documents/Thesis/clutterbot/')
 
-def drawBox():
-    XMIN, XMAX, YMIN, YMAX = [-0.35, 0.45, -0.92, -0.12]
-    CAM_Z = 1.9
-    BLUE = [0,0,1]
-    RED = [1,0,1]
-    GREEN = [0,1,0]
-    YELLOW = [1,1,0]
+def draw_box(box, img_size = 448):
+    if (box == []):
+        print("Cannot draw EMPTY BOUNDING BOX\n")
+        return box
+    
     Z = 0.785 # height of workspace thus z variable line
+    XMIN, XMAX, YMIN, YMAX = [-0.35, 0.45, -0.92, -0.12]
 
-    def convert_to_ws(box, img_size = 448):
-        y1, x1, y2, x2 = box
+    y1, x1, y2, x2 = box
+    lines = []
 
-        newy1 = (((y1 / img_size) * 0.8) + abs(YMAX))*-1
-        newy2 = (((y2 / img_size) * 0.8) + abs(YMAX))*-1
-        newx1 = ((x1 / img_size) * 0.8) - abs(XMIN)
-        newx2 = ((x2 / img_size) * 0.8) - abs(XMIN)
+    y1 = (((y1 / img_size) * 0.8) + abs(YMAX))*-1
+    y2 = (((y2 / img_size) * 0.8) + abs(YMAX))*-1
+    x1 = ((x1 / img_size) * 0.8) - abs(XMIN)
+    x2 = ((x2 / img_size) * 0.8) - abs(XMIN)
 
-        return newy1, newx1, newy2, newx2
-    
-    def draw_box(box, z, color):
-        y1, x1, y2, x2 = box
-        lines = []
+    lines.append(p.addUserDebugLine([x1, y1, Z], [x1, y2, Z], [0,0,1], lineWidth=3))
+    lines.append(p.addUserDebugLine([x2, y1, Z], [x2, y2, Z], [0,0,1], lineWidth=3))
+    lines.append(p.addUserDebugLine([x1, y1, Z], [x2, y1, Z], [0,0,1], lineWidth=3))
+    lines.append(p.addUserDebugLine([x1, y2, Z], [x2, y2, Z], [0,0,1], lineWidth=3))
 
-        lines.append(p.addUserDebugLine([x1, y1, z], [x1, y2, z], color, lineWidth=5))
-        lines.append(p.addUserDebugLine([x2, y1, z], [x2, y2, z], color, lineWidth=5))
-        lines.append(p.addUserDebugLine([x1, y1, z], [x2, y1, z], color, lineWidth=5))
-        lines.append(p.addUserDebugLine([x1, y2, z], [x2, y2, z], color, lineWidth=5))
+    return lines
 
-        return lines
-    
-    drawingBox = []
-
-    model, class_names = setup_mrcnn('custom', 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5', 0.7)
-    banana_path = 'objects/ycb_objects/YcbBanana/model.urdf'
-
-    center_x, center_y, center_z = 0.05, -0.52, CAM_Z
-    MRCNN_IMG_SIZE = 448
-    camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (MRCNN_IMG_SIZE, MRCNN_IMG_SIZE), 40)
-    env = Environment(camera, vis=vis, finger_length=0.06)
-
-
-    for _ in range(10):
-        env.reset_robot()          
-        env.remove_all_obj()
-        # env.load_obj_same_place(banana_path)
-        env.load_isolated_obj(banana_path)
-
-        rgb, _, _ = camera.get_cam_img()
-        box, mask, classID, score = evaluate_mrcnn(model, rgb)
-    
-        
-        bestBox = box[0]
-        
-        drawingBox = convert_to_ws(bestBox)
-        
-        lines = draw_box(drawingBox, Z , BLUE)
-        for _ in range(20):
-            p.stepSimulation()
-
-    # visualize.display_instances(rgb, box, mask, classID, class_names, score)
-
-
-
-
-    # while(True):
-    #     pass
-
-    # def remove_drawing(self,lineIDs):
-    #     for line in lineIDs:
-    #         p.removeUserDebugItem(line)
+def remove_box(lineIDs):
+    for line in lineIDs:
+        p.removeUserDebugItem(line)
 
 def setup_mrcnn(weights, weights_name, conf = 0.9):
     # Directory to save logs and trained model
@@ -167,48 +123,6 @@ def evaluate_mrcnn(model, rgb):
     print('MRCNN EXECUTION TIME: ', end - start)
 
     return box, mask, classID, score
-
-def make_mask(vis):
-    CAM_Z = 1.9
-    IMG_SIZE = 224
-
-    objects = YcbObjects('objects/ycb_objects',
-                        mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
-                        mod_stiffness=['Strawberry'])
-    
-    cracker_path = 'objects/ycb_objects/YcbCrackerBox/model.urdf'
-    hammer_path = 'objects/ycb_objects/YcbHammer/model.urdf'
-    banana_path = 'objects/ycb_objects/YcbBanana/model.urdf'
-
-    ## camera settings: cam_pos, cam_target, near, far, size, fov
-    center_x, center_y, center_z = 0.05, -0.52, CAM_Z
-    camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (IMG_SIZE, IMG_SIZE), 40)
-    env = Environment(camera, vis=vis, finger_length=0.06)
-
-    env.reset_robot()          
-    env.remove_all_obj()                        
-    
-    env.load_isolated_obj(banana_path)
-
-    # number_of_objects = 5
-    # objects.shuffle_objects()
-    # info = objects.get_n_first_obj_info(number_of_objects)
-    # env.create_pile(info)
-
-    # segmentation mask of the image where pixels each contain unique integers with object IDs
-    # yields integer values: upper rectangle of 1, lower of 4
-    # with mask as 6 (in the case of single object!!)
-    _, _, seg = camera.get_cam_img()
-
-    ## convert to numpy and binarize (i.e. filter for 6, since value for single mask)
-    numpy_mask = (np.array(seg) == 6).astype(int)
-
-    ## convert back to matrix
-    mask = np.asmatrix(numpy_mask)
-
-    # skimage.io.imshow(np.asmatrix(seg))
-    plt.imshow(mask, interpolation='nearest')
-    plt.show()
 
 def look_at_object(vis):
     CAM_Z = 1.9
@@ -447,48 +361,6 @@ def make_data(colab, background):
     json_path = save_dir + '/' + train_or_val + '_img_data.json'
     with open(json_path, "w") as write:
         json.dump(dict, write)
-
-def turn_object():
-    CAM_Z = 1.9
-    IMG_SIZE = 1024
-
-    # objects = YcbObjects('objects/ycb_objects',
-    #                     mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
-    #                     mod_stiffness=['Strawberry'])
-
-    ## camera settings: cam_pos, cam_target, near, far, size, fov
-    center_x, center_y, center_z = 0.05, -0.52, CAM_Z
-    camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (IMG_SIZE, IMG_SIZE), 40)
-    env = Environment(camera, vis=True, finger_length=0.06)
-
-    def no_object_found():
-        rgb, depth, _ = camera.get_cam_img()
-        if (depth.max()- depth.min() < 0.0025):
-            return True
-        else:
-            return False  
-
-    # obj_path = 'objects/ycb_objects/YcbChipsCan/model.urdf'
-    # objects = ['ChipsCan', 'CrackerBox', 'GelatinBox', 'MasterChefCan', 'MustardBottle', 'PottedMeatCan',
-    #         'PowerDrill', 'TomatoSoupCan']
-    objects = ['Scissors']
-    i = 0
-    while(True):
-        obj_path = 'objects/ycb_objects/Ycb' + objects[i] + '/model.urdf'
-        for _ in range(50):
-            env.reset_robot()          
-            env.remove_all_obj()
-
-            pitch = bool(random.getrandbits(1))
-            roll = bool(random.getrandbits(1))
-            
-            env.load_turnable_obj(obj_path, pitch, roll)
-
-            for _ in range(20):
-                    p.stepSimulation()
-            if(no_object_found()):
-                print("EMPTY DESK")
-        i+=1
 
 class GrasppingScenarios():
 
