@@ -25,7 +25,7 @@ from mrcnn.coco import coco
 # Root directory of the project
 ROOT_DIR = os.path.abspath('/home/ivar/Documents/Thesis/clutterbot/')
 
-def draw_box(box, img_size = 448):
+def draw_box(box, img_size = 448, color = [0,0,1]):
     if (box == []):
         print("Cannot draw EMPTY BOUNDING BOX\n")
         return box
@@ -41,10 +41,10 @@ def draw_box(box, img_size = 448):
     x1 = ((x1 / img_size) * 0.8) - abs(XMIN)
     x2 = ((x2 / img_size) * 0.8) - abs(XMIN)
 
-    lines.append(p.addUserDebugLine([x1, y1, Z], [x1, y2, Z], [0,0,1], lineWidth=3))
-    lines.append(p.addUserDebugLine([x2, y1, Z], [x2, y2, Z], [0,0,1], lineWidth=3))
-    lines.append(p.addUserDebugLine([x1, y1, Z], [x2, y1, Z], [0,0,1], lineWidth=3))
-    lines.append(p.addUserDebugLine([x1, y2, Z], [x2, y2, Z], [0,0,1], lineWidth=3))
+    lines.append(p.addUserDebugLine([x1, y1, Z], [x1, y2, Z], color, lineWidth=3))
+    lines.append(p.addUserDebugLine([x2, y1, Z], [x2, y2, Z], color, lineWidth=3))
+    lines.append(p.addUserDebugLine([x1, y1, Z], [x2, y1, Z], color, lineWidth=3))
+    lines.append(p.addUserDebugLine([x1, y2, Z], [x2, y2, Z], color, lineWidth=3))
 
     return lines
 
@@ -462,7 +462,44 @@ class GrasppingScenarios():
                 env.remove_all_obj()                        
                
                 path, mod_orn, mod_stiffness = objects.get_obj_info(obj_name)
-                env.load_isolated_obj(path, mod_orn, mod_stiffness)
+                # env.load_isolated_obj(path, mod_orn, mod_stiffness)
+
+                ##########################################################################
+                ## MRCNN PART
+                ##########################################################################
+
+                path1 = 'objects/ycb_objects/YcbHammer/model.urdf'
+                env.load_obj_same_place(path1, -0.2, -0.7)
+
+                path2 = 'objects/ycb_objects/YcbStrawberry/model.urdf'
+                env.load_obj_same_place(path2, 0.3, -0.2)
+
+                model, class_names = setup_mrcnn('custom', 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5')
+
+                cam2 = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (448, 448), 40)
+                rgb, _, _ = cam2.get_cam_img()   
+                box, mask, classID, score = evaluate_mrcnn(model, rgb)
+
+                # print(box)
+                # visualize.display_instances(rgb, box, mask, classID, class_names, score)
+
+                if (14 in classID):
+                    print('STRAWBERRY FOUND')
+                    bananaFound = True
+
+                    result = np.where(classID == 14)
+                    index = result[0][0]
+                    strawberryBox = box[index]
+
+                    print('index: ', index)
+                    print('box:', strawberryBox)
+                    print('box/2:', (strawberryBox/2).astype(int))
+
+                    rsStrBox = (strawberryBox/2).astype(int)
+                    draw_box(rsStrBox, 224)
+
+                ###########################################################################
+                
                 self.dummy_simulation_steps(20)
 
                 number_of_attempts = self.ATTEMPTS
@@ -476,7 +513,8 @@ class GrasppingScenarios():
                     ##convert BGR to RGB
                     rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
                               
-                    grasps, save_name = generator.predict_grasp( rgb, depth, n_grasps=number_of_attempts, show_output=output)
+                    grasps, save_name = generator.predict_grasp( rgb, depth, rsStrBox, n_grasps=number_of_attempts, show_output=output)
+                    # grasps, save_name = generator.predict_grasp( rgb, depth, n_grasps=number_of_attempts, show_output=output)
                     if (grasps == []):
                         self.dummy_simulation_steps(50)
                         #print ("could not find a grasp point!")
@@ -750,18 +788,12 @@ if __name__ == '__main__':
     colab=args.colab
     background = args.background
     
-    if args.command == 'mask':
-        make_mask(vis)
-    elif args.command == 'banana':
+    if args.command == 'banana':
         look_at_banana(vis)
     elif args.command == 'data':
         make_data(colab, background)
     elif args.command == 'obj':
         look_at_object(vis)
-    elif args.command == 'turn':
-        turn_object()
-    elif args.command == 'box':
-        drawBox()
     elif args.command == 'grasp':
         grasp = GrasppingScenarios(args.network)
 

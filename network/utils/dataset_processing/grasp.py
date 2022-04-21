@@ -423,7 +423,7 @@ class Grasp:
             self.width * scale)
 
 
-def detect_grasps(q_img, ang_img, width_img=None, no_grasps=1):
+def detect_grasps(q_img, ang_img, bbox, width_img=None, no_grasps=1):
     """
     Detect grasps in a network output.
     :param q_img: Q image network output
@@ -442,8 +442,19 @@ def detect_grasps(q_img, ang_img, width_img=None, no_grasps=1):
     # Original GR_ConvNet (hami)
     # local_max = peak_local_max(q_img, min_distance=1, threshold_abs=0.6, num_peaks=no_grasps)
 
-    # taken from GGCNN
-    local_max = peak_local_max(q_img, min_distance=20, threshold_abs=0.2, num_peaks=no_grasps)
+    if (bbox != []):
+        ## Detect grasp within bounding box
+        new_q = np.zeros((224,224))
+        y1, x1, y2, x2 = bbox
+
+        new_q[y1:y2, x1:x2] = q_img[y1:y2, x1:x2]
+        print("newq =", new_q)
+        local_max = peak_local_max(new_q, min_distance=20, threshold_abs=0.2, num_peaks=no_grasps)
+    else: 
+        ## Detect standard grasp with highest quality
+        print("Empty bbox in detect_grasp")
+        # taken from GGCNN
+        local_max = peak_local_max(q_img, min_distance=20, threshold_abs=0.2, num_peaks=no_grasps)
 
     # local_max = peak_local_max(q_img, min_distance=10, threshold_abs=0.02, num_peaks=no_grasps)
 

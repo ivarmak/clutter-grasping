@@ -472,9 +472,7 @@ class Environment:
         self.wait_until_still(obj_id)
         self.update_obj_states()
 
-    def load_obj_same_place(self, path, mod_orn=False, mod_stiffness=False):
-        x = 0.07004307157740353
-        y = -0.5090073503787834
+    def load_obj_same_place(self, path, x, y, mod_orn=False, mod_stiffness=False):
         yaw = 2.0268441312371794
 
         pos = [x, y, self.Z_TABLE_TOP]
