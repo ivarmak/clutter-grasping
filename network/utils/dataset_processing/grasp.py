@@ -448,11 +448,12 @@ def detect_grasps(q_img, ang_img, bbox, width_img=None, no_grasps=1):
         y1, x1, y2, x2 = bbox
 
         new_q[y1:y2, x1:x2] = q_img[y1:y2, x1:x2]
-        print("newq =", new_q)
+        print("Grasping from bbox")
         local_max = peak_local_max(new_q, min_distance=20, threshold_abs=0.2, num_peaks=no_grasps)
+        
     else: 
         ## Detect standard grasp with highest quality
-        print("Empty bbox in detect_grasp")
+        # print("Empty bbox in detect_grasp")
         # taken from GGCNN
         local_max = peak_local_max(q_img, min_distance=20, threshold_abs=0.2, num_peaks=no_grasps)
 

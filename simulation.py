@@ -113,6 +113,7 @@ def setup_mrcnn(weights, weights_name, conf = 0.9):
     return model, class_names
 
 def evaluate_mrcnn(model, rgb):
+    print("Recognition phase...")
     start = time.time()
 
     results = model.detect([rgb], verbose=0)
@@ -120,7 +121,7 @@ def evaluate_mrcnn(model, rgb):
     box, mask, classID, score = r['rois'], r['masks'], r['class_ids'], r['scores']                      
 
     end = time.time()
-    print('MRCNN EXECUTION TIME: ', end - start)
+    print('MRCNN execution time: ', end - start)
 
     return box, mask, classID, score
 
@@ -273,7 +274,7 @@ def make_data(colab, background):
     env = Environment(camera, vis=False, finger_length=0.06)
 
     train_or_val = 'val'
-    nr_of_objects = 37
+    nr_of_objects = 75
 
     object_names = ['Banana', 'ChipsCan', 'CrackerBox', 'FoamBrick', 'GelatinBox', 'Hammer',
                 'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan', 'PowerDrill', 
@@ -463,42 +464,10 @@ class GrasppingScenarios():
                
                 path, mod_orn, mod_stiffness = objects.get_obj_info(obj_name)
                 # env.load_isolated_obj(path, mod_orn, mod_stiffness)
-
-                ##########################################################################
-                ## MRCNN PART
-                ##########################################################################
-
                 path1 = 'objects/ycb_objects/YcbHammer/model.urdf'
                 env.load_obj_same_place(path1, -0.2, -0.7)
-
                 path2 = 'objects/ycb_objects/YcbStrawberry/model.urdf'
                 env.load_obj_same_place(path2, 0.3, -0.2)
-
-                model, class_names = setup_mrcnn('custom', 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5')
-
-                cam2 = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (448, 448), 40)
-                rgb, _, _ = cam2.get_cam_img()   
-                box, mask, classID, score = evaluate_mrcnn(model, rgb)
-
-                # print(box)
-                # visualize.display_instances(rgb, box, mask, classID, class_names, score)
-
-                if (14 in classID):
-                    print('STRAWBERRY FOUND')
-                    bananaFound = True
-
-                    result = np.where(classID == 14)
-                    index = result[0][0]
-                    strawberryBox = box[index]
-
-                    print('index: ', index)
-                    print('box:', strawberryBox)
-                    print('box/2:', (strawberryBox/2).astype(int))
-
-                    rsStrBox = (strawberryBox/2).astype(int)
-                    draw_box(rsStrBox, 224)
-
-                ###########################################################################
                 
                 self.dummy_simulation_steps(20)
 
@@ -509,11 +478,38 @@ class GrasppingScenarios():
                 while self.is_there_any_object(camera) and number_of_failures < number_of_attempts:     
                     
                     bgr, depth, _ = camera.get_cam_img()
-
+                    plt.imshow(bgr)
                     ##convert BGR to RGB
                     rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-                              
-                    grasps, save_name = generator.predict_grasp( rgb, depth, rsStrBox, n_grasps=number_of_attempts, show_output=output)
+                    plt.imshow(rgb)
+                    ##########################################################################
+                    ## MRCNN PART
+                    ##########################################################################
+
+                    model, class_names = setup_mrcnn('custom', 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5')
+
+                    cam2 = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (448, 448), 40)
+                    mrcnnRGB, _, _ = cam2.get_cam_img()   
+                    box, mask, classID, score = evaluate_mrcnn(model, mrcnnRGB)
+
+                    # visualize.display_instances(rgb, box, mask, classID, class_names, score)
+                    bbox = []
+
+                    if (14 in classID):
+                        print('STRAWBERRY FOUND')
+                        bananaFound = True
+
+                        result = np.where(classID == 14)
+                        index = result[0][0]
+                        strawberryBox = box[index]
+
+                        ## Resize to 224 for GR ConvNet
+                        bbox = (strawberryBox/2).astype(int)
+                        draw_box(bbox, 224)
+
+                    ###########################################################################
+
+                    grasps, save_name = generator.predict_grasp( rgb, depth, bbox, n_grasps=number_of_attempts, show_output=output)
                     # grasps, save_name = generator.predict_grasp( rgb, depth, n_grasps=number_of_attempts, show_output=output)
                     if (grasps == []):
                         self.dummy_simulation_steps(50)
@@ -770,7 +766,7 @@ def parse_args():
     parser.add_argument('--vis', type=bool, default=True, help='vis (True/False)')
     parser.add_argument('--report', type=bool, default=True, help='report (True/False)')
     parser.add_argument('--colab', type=bool, default=True, help='colab (True/False)')
-    parser.add_argument('--background', type=str, default='plain', help='colab (True/False)')
+    parser.add_argument('--background', type=str, default='plain', help='background (jitter / texture)')
 
                         
     args = parser.parse_args()
