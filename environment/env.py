@@ -16,6 +16,7 @@ class Environment:
     GRIPPER_MOVING_HEIGHT = 1.25
     GRIPPER_GRASPED_LIFT_HEIGHT = 1.4
     TARGET_ZONE_POS = [0.7, 0.0, 0.685]
+    TARGET_ZONE_POS_2 = [-0.7, -0.1, 0.685]
     SIMULATION_STEP_DELAY = 0.0005 #speed of simulator - the lower the fatser ## should be a param
     FINGER_LENGTH = 0.06
     Z_TABLE_TOP = 0.785
@@ -55,6 +56,17 @@ class Environment:
                                     p.getQuaternionFromEuler([0, 0, 0]),
                                     useFixedBase=True,
                                     globalScaling=0.7)
+
+        self.target_table_id_2 = p.loadURDF('environment/urdf/objects/target_table.urdf',
+                                          [-0.7, -0.1, 0.66],
+                                          p.getQuaternionFromEuler([0, 0, 0]),
+                                          useFixedBase=True)
+        self.target_id_2 = p.loadURDF('environment/urdf/objects/targetbox.urdf',
+                                    self.TARGET_ZONE_POS_2,
+                                    p.getQuaternionFromEuler([0, 0, 0]),
+                                    useFixedBase=True,
+                                    globalScaling=0.7)
+
         self.UR5Stand_id = p.loadURDF('environment/urdf/objects/ur5_stand.urdf',
                                       [-0.7, -0.36, 0.0],
                                       p.getQuaternionFromEuler([0, 0, 0]),
@@ -145,12 +157,12 @@ class Environment:
             p.addUserDebugLine([camera.x-alpha, camera.y+alpha, z_cam_l2], [camera.x-beta, camera.y+beta, z_cam_l3], color, lineWidth=4)
 
             ### working area             
-            working_area = 0.79 #m 
-            beta = 0.4 
-            p.addUserDebugLine([camera.x+beta, camera.y+beta, working_area], [camera.x+beta, camera.y-beta, working_area], [0, 1, 0], lineWidth=5)
-            p.addUserDebugLine([camera.x+beta, camera.y-beta, working_area], [camera.x-beta, camera.y-beta, working_area], [0, 1, 0], lineWidth=5)
-            p.addUserDebugLine([camera.x-beta, camera.y-beta, working_area], [camera.x-beta, camera.y+beta, working_area], [0, 1, 0], lineWidth=5)
-            p.addUserDebugLine([camera.x-beta, camera.y+beta, working_area], [camera.x+beta, camera.y+beta, working_area], [0, 1, 0], lineWidth=5)
+            # working_area = 0.79 #m 
+            # beta = 0.4 
+            # p.addUserDebugLine([camera.x+beta, camera.y+beta, working_area], [camera.x+beta, camera.y-beta, working_area], [0, 1, 0], lineWidth=5)
+            # p.addUserDebugLine([camera.x+beta, camera.y-beta, working_area], [camera.x-beta, camera.y-beta, working_area], [0, 1, 0], lineWidth=5)
+            # p.addUserDebugLine([camera.x-beta, camera.y-beta, working_area], [camera.x-beta, camera.y+beta, working_area], [0, 1, 0], lineWidth=5)
+            # p.addUserDebugLine([camera.x-beta, camera.y+beta, working_area], [camera.x+beta, camera.y+beta, working_area], [0, 1, 0], lineWidth=5)
 
 
 
@@ -278,6 +290,16 @@ class Environment:
 
     def check_target_reached(self, obj_id):
         aabb = p.getAABB(self.target_id, -1)
+        x_min, x_max = aabb[0][0], aabb[1][0]
+        y_min, y_max = aabb[0][1], aabb[1][1]
+        pos = p.getBasePositionAndOrientation(obj_id)
+        x, y = pos[0][0], pos[0][1]
+        if x > x_min and x < x_max and y > y_min and y < y_max:
+            return True
+        return False
+    
+    def check_target_reached_2(self, obj_id):
+        aabb = p.getAABB(self.target_id_2, -1)
         x_min, x_max = aabb[0][0], aabb[1][0]
         y_min, y_max = aabb[0][1], aabb[1][1]
         pos = p.getBasePositionAndOrientation(obj_id)
@@ -714,6 +736,68 @@ class Environment:
         
 
         return succes_grasp, succes_target
+
+    def grasp_2(self, pos: tuple, roll: float, gripper_opening_length: float, obj_height: float, debug: bool = False):
+            """
+            Method to perform grasp for the right basket
+            pos [x y z]: The axis in real-world coordinate
+            roll: float,   for grasp, it should be in [-pi/2, pi/2)
+            """
+            succes_grasp, succes_target = False, False
+            grasped_obj_id = None
+
+            x, y, z = pos
+            # Substracht gripper finger length from z
+            z -= self.finger_length
+            z = np.clip(z, *self.ee_position_limit[2])
+
+            # Move above target
+            # self.reset_robot()
+            self.move_gripper(0.1)
+            orn = p.getQuaternionFromEuler([roll, np.pi/2, 0.0])
+            self.move_ee([x, y, self.GRIPPER_MOVING_HEIGHT+1, orn])
+
+            # Reduce grip to get a tighter grip
+            gripper_opening_length *= self.GRIP_REDUCTION
+
+            # Grasp and lift object
+            z_offset = self.calc_z_offset(gripper_opening_length)
+            self.move_ee([x, y, z + z_offset, orn])
+            # self.move_gripper(gripper_opening_length)
+            self.auto_close_gripper(check_contact=True)
+            for _ in range(15):
+                self.step_simulation()
+            self.move_ee([x, y, self.GRIPPER_MOVING_HEIGHT+1, orn])
+
+            # If the object has been grasped and lifted off the table
+            grasped_id = self.check_grasped_id()
+            if len(grasped_id) == 1:
+                succes_grasp = True
+                grasped_obj_id = grasped_id[0]
+            else:
+                return succes_target, succes_grasp
+
+            # Move object to target zone
+            y_drop = self.TARGET_ZONE_POS[2] + z_offset + obj_height + 0.15
+            y_orn = p.getQuaternionFromEuler([-np.pi*0.25, np.pi/2, 0.0])
+
+            #self.move_away_arm()
+            self.move_ee([self.TARGET_ZONE_POS_2[0],
+                        -0.3, 2.25, y_orn])
+            self.move_ee([self.TARGET_ZONE_POS_2[0],
+                        self.TARGET_ZONE_POS_2[1], y_drop, y_orn])
+            self.move_gripper(0.085)
+            self.move_ee([self.TARGET_ZONE_POS_2[0], self.TARGET_ZONE_POS_2[1],
+                        self.GRIPPER_MOVING_HEIGHT+1, y_orn])
+
+            # Wait then check if object is in target zone
+            for _ in range(50):
+                self.step_simulation()
+            if self.check_target_reached_2(grasped_obj_id):
+                succes_target = True
+                #self.remove_obj(grasped_obj_id)
+
+            return succes_grasp, succes_target
 
     def close(self):
         p.disconnect(self.physicsClient)

@@ -11,7 +11,7 @@
         <mesh filename="tray_textured.obj" scale="0.5 0.5 0.5"/>
       </geometry>
       <material name="tray_material">
-        <color rgba="2 1 1 1"/>
+        <color rgba="1 2 1 1"/>
       </material>
     </visual>
      <collision>
