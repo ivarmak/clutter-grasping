@@ -118,43 +118,43 @@ class Environment:
             p.resetDebugVisualizerCamera(dist, yaw, pitch, target)
 
             # camera model
-            alpha = 0.025 #m 
-            z_cam_l1 = camera.z #m 
+            # alpha = 0.025 #m 
+            # z_cam_l1 = camera.z #m 
 
-            color = [0.3, 0, 0]
-            p.addUserDebugText("RGB-D camera", [camera.x-0.1, camera.y, camera.z+0.02], color, textSize=2)
-             
-            p.addUserDebugLine([camera.x+alpha, camera.y+alpha, z_cam_l1], [camera.x+alpha, camera.y-alpha, z_cam_l1], color, lineWidth=4)
-            p.addUserDebugLine([camera.x+alpha, camera.y-alpha, z_cam_l1], [camera.x-alpha, camera.y-alpha, z_cam_l1], color, lineWidth=4)
-            p.addUserDebugLine([camera.x-alpha, camera.y-alpha, z_cam_l1], [camera.x-alpha, camera.y+alpha, z_cam_l1], color, lineWidth=4)
-            p.addUserDebugLine([camera.x-alpha, camera.y+alpha, z_cam_l1], [camera.x+alpha, camera.y+alpha, z_cam_l1], color, lineWidth=4)
+            # color = [0.3, 0, 0]
+            # p.addUserDebugText("RGB-D camera", [camera.x-0.1, camera.y, camera.z+0.02], color, textSize=2)
+
+            # p.addUserDebugLine([camera.x+alpha, camera.y+alpha, z_cam_l1], [camera.x+alpha, camera.y-alpha, z_cam_l1], color, lineWidth=4)
+            # p.addUserDebugLine([camera.x+alpha, camera.y-alpha, z_cam_l1], [camera.x-alpha, camera.y-alpha, z_cam_l1], color, lineWidth=4)
+            # p.addUserDebugLine([camera.x-alpha, camera.y-alpha, z_cam_l1], [camera.x-alpha, camera.y+alpha, z_cam_l1], color, lineWidth=4)
+            # p.addUserDebugLine([camera.x-alpha, camera.y+alpha, z_cam_l1], [camera.x+alpha, camera.y+alpha, z_cam_l1], color, lineWidth=4)
         
-            z_cam_l2 = camera.z - 0.07 #m 
+            # z_cam_l2 = camera.z - 0.07 #m 
                
-            p.addUserDebugLine([camera.x+alpha, camera.y+alpha, z_cam_l2], [camera.x+alpha, camera.y-alpha, z_cam_l2], color, lineWidth=4)
-            p.addUserDebugLine([camera.x+alpha, camera.y-alpha, z_cam_l2], [camera.x-alpha, camera.y-alpha, z_cam_l2], color, lineWidth=4)
-            p.addUserDebugLine([camera.x-alpha, camera.y-alpha, z_cam_l2], [camera.x-alpha, camera.y+alpha, z_cam_l2], color, lineWidth=4)
-            p.addUserDebugLine([camera.x-alpha, camera.y+alpha, z_cam_l2], [camera.x+alpha, camera.y+alpha, z_cam_l2], color, lineWidth=4)
+            # p.addUserDebugLine([camera.x+alpha, camera.y+alpha, z_cam_l2], [camera.x+alpha, camera.y-alpha, z_cam_l2], color, lineWidth=4)
+            # p.addUserDebugLine([camera.x+alpha, camera.y-alpha, z_cam_l2], [camera.x-alpha, camera.y-alpha, z_cam_l2], color, lineWidth=4)
+            # p.addUserDebugLine([camera.x-alpha, camera.y-alpha, z_cam_l2], [camera.x-alpha, camera.y+alpha, z_cam_l2], color, lineWidth=4)
+            # p.addUserDebugLine([camera.x-alpha, camera.y+alpha, z_cam_l2], [camera.x+alpha, camera.y+alpha, z_cam_l2], color, lineWidth=4)
 
-            ### body
-            p.addUserDebugLine([camera.x+alpha, camera.y+alpha, z_cam_l1], [camera.x+alpha, camera.y+alpha, z_cam_l2], color, lineWidth=4)
-            p.addUserDebugLine([camera.x+alpha, camera.y-alpha, z_cam_l1], [camera.x+alpha, camera.y-alpha, z_cam_l2], color, lineWidth=4)
-            p.addUserDebugLine([camera.x-alpha, camera.y-alpha, z_cam_l1], [camera.x-alpha, camera.y-alpha, z_cam_l2], color, lineWidth=4)
-            p.addUserDebugLine([camera.x-alpha, camera.y+alpha, z_cam_l1], [camera.x-alpha, camera.y+alpha, z_cam_l2], color, lineWidth=4)
+            # ### body
+            # p.addUserDebugLine([camera.x+alpha, camera.y+alpha, z_cam_l1], [camera.x+alpha, camera.y+alpha, z_cam_l2], color, lineWidth=4)
+            # p.addUserDebugLine([camera.x+alpha, camera.y-alpha, z_cam_l1], [camera.x+alpha, camera.y-alpha, z_cam_l2], color, lineWidth=4)
+            # p.addUserDebugLine([camera.x-alpha, camera.y-alpha, z_cam_l1], [camera.x-alpha, camera.y-alpha, z_cam_l2], color, lineWidth=4)
+            # p.addUserDebugLine([camera.x-alpha, camera.y+alpha, z_cam_l1], [camera.x-alpha, camera.y+alpha, z_cam_l2], color, lineWidth=4)
 
-            ### Third rectangle             
-            z_cam_l3 = camera.z - 0.125 #m 
-            beta = alpha * 2 
-            p.addUserDebugLine([camera.x+beta, camera.y+beta, z_cam_l3], [camera.x+beta, camera.y-beta, z_cam_l3], color, lineWidth=4)
-            p.addUserDebugLine([camera.x+beta, camera.y-beta, z_cam_l3], [camera.x-beta, camera.y-beta, z_cam_l3], color, lineWidth=4)
-            p.addUserDebugLine([camera.x-beta, camera.y-beta, z_cam_l3], [camera.x-beta, camera.y+beta, z_cam_l3], color, lineWidth=4)
-            p.addUserDebugLine([camera.x-beta, camera.y+beta, z_cam_l3], [camera.x+beta, camera.y+beta, z_cam_l3], color, lineWidth=4)
+            # ### Third rectangle             
+            # z_cam_l3 = camera.z - 0.125 #m 
+            # beta = alpha * 2 
+            # p.addUserDebugLine([camera.x+beta, camera.y+beta, z_cam_l3], [camera.x+beta, camera.y-beta, z_cam_l3], color, lineWidth=4)
+            # p.addUserDebugLine([camera.x+beta, camera.y-beta, z_cam_l3], [camera.x-beta, camera.y-beta, z_cam_l3], color, lineWidth=4)
+            # p.addUserDebugLine([camera.x-beta, camera.y-beta, z_cam_l3], [camera.x-beta, camera.y+beta, z_cam_l3], color, lineWidth=4)
+            # p.addUserDebugLine([camera.x-beta, camera.y+beta, z_cam_l3], [camera.x+beta, camera.y+beta, z_cam_l3], color, lineWidth=4)
 
-            ### body
-            p.addUserDebugLine([camera.x+alpha, camera.y+alpha, z_cam_l2], [camera.x+beta, camera.y+beta, z_cam_l3], color, lineWidth=4)
-            p.addUserDebugLine([camera.x+alpha, camera.y-alpha, z_cam_l2], [camera.x+beta, camera.y-beta, z_cam_l3], color, lineWidth=4)
-            p.addUserDebugLine([camera.x-alpha, camera.y-alpha, z_cam_l2], [camera.x-beta, camera.y-beta, z_cam_l3], color, lineWidth=4)
-            p.addUserDebugLine([camera.x-alpha, camera.y+alpha, z_cam_l2], [camera.x-beta, camera.y+beta, z_cam_l3], color, lineWidth=4)
+            # ### body
+            # p.addUserDebugLine([camera.x+alpha, camera.y+alpha, z_cam_l2], [camera.x+beta, camera.y+beta, z_cam_l3], color, lineWidth=4)
+            # p.addUserDebugLine([camera.x+alpha, camera.y-alpha, z_cam_l2], [camera.x+beta, camera.y-beta, z_cam_l3], color, lineWidth=4)
+            # p.addUserDebugLine([camera.x-alpha, camera.y-alpha, z_cam_l2], [camera.x-beta, camera.y-beta, z_cam_l3], color, lineWidth=4)
+            # p.addUserDebugLine([camera.x-alpha, camera.y+alpha, z_cam_l2], [camera.x-beta, camera.y+beta, z_cam_l3], color, lineWidth=4)
 
             ### working area             
             # working_area = 0.79 #m 
@@ -168,8 +168,8 @@ class Environment:
 
         # Setup some Limit
         self.gripper_open_limit = (0.0, 0.1)
-        self.ee_position_limit = ((-0.8, 0.8),
-                                  (-0.8, 0.8),
+        self.ee_position_limit = ((-0.7, 0.7),
+								  (-0.7, 0.7),
                                   (0.785, 1.4))
         self.reset_robot()
 
@@ -622,7 +622,6 @@ class Environment:
         self.move_obj_along_axis(down_obj_id, 1, '+', step, init_y)
         self.update_obj_states()
 
-
     def move_ee(self, action, max_step=300, check_collision_config=None, custom_velocity=None,
                 try_close_gripper=False, verbose=False):
         x, y, z, orn = action
@@ -634,11 +633,21 @@ class Environment:
               0.01, 0.01, 0.01, 0.01, 0.01, 0.01]
         jd = jd * 0
         still_open_flag_ = True  # Hot fix
+
+        real_xyz, real_xyzw = p.getLinkState(self.robot_id, self.eef_id)[0:2]
+        alpha = 0.2 # this parameter can be tuned to make the movement  smoother
+        
         for _ in range(max_step):
+
             # apply IK
-            joint_poses = p.calculateInverseKinematics(self.robot_id, self.eef_id, [x, y, z], orn,
-                                                       maxNumIterations=100, jointDamping=jd
-                                                       )
+            x_tmp = alpha * x + (1-alpha)*real_xyz[0]
+            y_tmp = alpha * y + (1-alpha)*real_xyz[1]
+            z_tmp = alpha * z + (1-alpha)*real_xyz[2]
+            
+            joint_poses = p.calculateInverseKinematics(bodyUniqueId=self.robot_id, endEffectorLinkIndex=self.eef_id, 
+                                                       targetPosition=[x_tmp, y_tmp, z_tmp], targetOrientation=orn, 
+                                                       maxNumIterations=200)
+
             # Filter out the gripper
             for i, name in enumerate(self.controlJoints[:-1]):
                 joint = self.joints[name]
@@ -651,11 +660,13 @@ class Environment:
             self.step_simulation()
             if try_close_gripper and still_open_flag_ and not self.gripper_contact():
                 still_open_flag_ = self.close_gripper(check_contact=True)
+
             # Check if contact with objects
             if check_collision_config and self.gripper_contact(**check_collision_config):
                 if self.debug:
                     print('Collision detected!', self.check_grasped_id())
                 return False, p.getLinkState(self.robot_id, self.eef_id)[0:2]
+
             # Check xyz and rpy error
             real_xyz, real_xyzw = p.getLinkState(
                 self.robot_id, self.eef_id)[0:2]
@@ -672,6 +683,55 @@ class Environment:
             print('Failed to reach the target')
         return False, p.getLinkState(self.robot_id, self.eef_id)[0:2]
 
+    # def move_ee(self, action, max_step=300, check_collision_config=None, custom_velocity=None,
+    #             try_close_gripper=False, verbose=False):
+    #     x, y, z, orn = action
+    #     x = np.clip(x, *self.ee_position_limit[0])
+    #     y = np.clip(y, *self.ee_position_limit[1])
+    #     z = np.clip(z, *self.ee_position_limit[2])
+    #     # set damping for robot arm and gripper
+    #     jd = [0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
+    #           0.01, 0.01, 0.01, 0.01, 0.01, 0.01]
+    #     jd = jd * 0
+    #     still_open_flag_ = True  # Hot fix
+    #     for _ in range(max_step):
+    #         # apply IK
+    #         joint_poses = p.calculateInverseKinematics(self.robot_id, self.eef_id, [x, y, z], orn,
+    #                                                    maxNumIterations=100, jointDamping=jd
+    #                                                    )
+    #         # Filter out the gripper
+    #         for i, name in enumerate(self.controlJoints[:-1]):
+    #             joint = self.joints[name]
+    #             pose = joint_poses[i]
+    #             # control robot end-effector
+    #             p.setJointMotorControl2(self.robot_id, joint.id, p.POSITION_CONTROL,
+    #                                     targetPosition=pose, force=joint.maxForce,
+    #                                     maxVelocity=joint.maxVelocity if custom_velocity is None else custom_velocity * (i+1))
+
+    #         self.step_simulation()
+    #         if try_close_gripper and still_open_flag_ and not self.gripper_contact():
+    #             still_open_flag_ = self.close_gripper(check_contact=True)
+    #         # Check if contact with objects
+    #         if check_collision_config and self.gripper_contact(**check_collision_config):
+    #             if self.debug:
+    #                 print('Collision detected!', self.check_grasped_id())
+    #             return False, p.getLinkState(self.robot_id, self.eef_id)[0:2]
+    #         # Check xyz and rpy error
+    #         real_xyz, real_xyzw = p.getLinkState(
+    #             self.robot_id, self.eef_id)[0:2]
+    #         roll, pitch, yaw = p.getEulerFromQuaternion(orn)
+    #         real_roll, real_pitch, real_yaw = p.getEulerFromQuaternion(real_xyzw)
+    #         if np.linalg.norm(np.array((x, y, z)) - real_xyz) < 0.001 \
+    #                 and np.abs((roll - real_roll, pitch - real_pitch, yaw - real_yaw)).sum() < 0.001:
+    #             if verbose:
+    #                 print('Reach target with', _, 'steps')
+    #             return True, (real_xyz, real_xyzw)
+
+    #     # raise FailToReachTargetError
+    #     if self.debug:
+    #         print('Failed to reach the target')
+    #     return False, p.getLinkState(self.robot_id, self.eef_id)[0:2]
+
     def grasp(self, pos: tuple, roll: float, gripper_opening_length: float, obj_height: float, debug: bool = False):
         """
         Method to perform grasp
@@ -687,7 +747,7 @@ class Environment:
         z = np.clip(z, *self.ee_position_limit[2])
 
         # Move above target
-        #self.reset_robot()
+        # self.reset_robot()
         self.move_gripper(0.1)
         orn = p.getQuaternionFromEuler([roll, np.pi/2, 0.0])
         self.move_ee([x, y, self.GRIPPER_MOVING_HEIGHT, orn])
@@ -737,7 +797,7 @@ class Environment:
 
         return succes_grasp, succes_target
 
-    def grasp_2(self, pos: tuple, roll: float, gripper_opening_length: float, obj_height: float, debug: bool = False):
+    def targeted_grasp(self, pos: tuple, roll: float, gripper_opening_length: float, obj_height: float, debug: bool = False):
             """
             Method to perform grasp for the right basket
             pos [x y z]: The axis in real-world coordinate
