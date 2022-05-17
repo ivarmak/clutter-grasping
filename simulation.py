@@ -86,7 +86,7 @@ def setup_mrcnn(weights, weights_name, conf = 0.9):
     return model, class_names
 
 def evaluate_mrcnn(model, rgb):
-    print("Recognition phase...")
+    print("\nRecognition phase...")
     start = time.time()
 
     results = model.detect([rgb], verbose=0)
@@ -427,7 +427,7 @@ class GrasppingScenarios():
 
     def write_temp_text(self, text, color = [0,0.5,0]):
         debugID = p.addUserDebugText(text, [-0.0, -1.2, 0.8], color, textSize=2)
-        time.sleep(0.5)
+        time.sleep(0.8)
         p.removeUserDebugItem(debugID)
 
     def dummy_simulation_steps(self,n):
@@ -459,7 +459,7 @@ class GrasppingScenarios():
 
 
     def isolated_target_scenario(self,runs, device, vis, output, debug):
-        model, class_names = setup_mrcnn('custom', 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5', 0.8)
+        model, class_names = setup_mrcnn('custom', 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5', 0.9)
         objects = YcbObjects('objects/ycb_objects',
                             mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
                             mod_stiffness=['Strawberry'])
@@ -483,7 +483,7 @@ class GrasppingScenarios():
         IDLE, SEARCHING, FOUND, NOTFOUND, GRASPING, DELIVERED = 1,2,3,4,5,6
 
         for target in target_list:
-            state = IDLE
+            state = "idle"
 
             for i in range(runs):
                 print("----------- run ", i+1, " -----------")
@@ -501,7 +501,7 @@ class GrasppingScenarios():
 
                 spawn_obj = [target] + other_obj[0:3]
                 self.spawn_four_objects(objects, spawn_obj, env)
-                print("Other objects: ", spawn_obj[1:])
+                print("Other objects: {}".format(spawn_obj[1:]))
 
                 self.dummy_simulation_steps(20)
 
@@ -510,7 +510,7 @@ class GrasppingScenarios():
                 idx = 0 ## select the best grasp configuration
                 failed_grasp_counter = 0
 
-                while self.is_there_any_object(camera) and number_of_failures < number_of_attempts and state != DELIVERED:     
+                while self.is_there_any_object(camera) and number_of_failures < number_of_attempts and state != "targetDelivered":     
                     
                     rgb, depth, _ = camera.get_cam_img()
 
@@ -518,7 +518,7 @@ class GrasppingScenarios():
                     ## RECOGNITION
                     ##########################################################################
                     
-                    state = SEARCHING
+                    state = "searching"
 
                     mrcnnRGB, _, _ = mrcnn_cam.get_cam_img()   
                     box, mask, classIDs, score = evaluate_mrcnn(model, mrcnnRGB)
@@ -526,9 +526,6 @@ class GrasppingScenarios():
                     # visualize.display_instances(mrcnnRGB, box, mask, classIDs, class_names, score)
                     bbox = []
                     targetID = class_names.index(target)
-                    targetFound = False
-
-                    
 
                     recogObjects = {}
 
@@ -547,11 +544,11 @@ class GrasppingScenarios():
                         recogObjects[j] = obj
                         print("Found: {}, score: {:.2f}".format(found_obj, score[j]))
                         
-                    # print(recogObjects)
                     if (targetID in classIDs):
-                        print('TARGET {} FOUND'.format(target))
+                        state = "targetGrasp"
+                        ## Target is found on the table
+                        print('\nTARGET {} FOUND'.format(target))
                         targettext = self.write_perm_text(targettext, "{} found".format(target), [0,0.5,0])
-                        targetFound = True
 
                         result = np.where(classIDs == targetID)
                         index = result[0][0]
@@ -560,11 +557,21 @@ class GrasppingScenarios():
                         ## Resize to 224 for GR ConvNet
                         bbox = (targetBox/2).astype(int)
                         if vis: visualTargetBox = self.draw_box(bbox, 224,[0,0.5,0])
-                    else:
+
+                    elif recogObjects != {}:
+                        state = "nonTargetGrasp"
+                        ## At least one object found on table, grasp non-target object with highest score
+                        nonTarget = recogObjects[0]
+                        bbox = (nonTarget["box"]/2).astype(int)
+                        
                         if vis: 
-                            self.write_temp_text("Not found", [0.5,0,0])
-                            self.write_temp_text("Grasping other object", [0.5,0,0])
-                        print("Target not found, grasping other object")
+                            self.write_temp_text("\nNot found", [0.5,0,0])
+                            self.write_temp_text("Grasping {}".format(nonTarget["name"]), [0.5,0,0])
+                        print("\nTarget not found, grasping {}".format(nonTarget["name"]))
+                    else:
+                        state = "noObjectFound"
+                        ## No object recognized
+                        print("\nNo object found on table")
 
                     ##########################################################################
                     ## GRASPING
@@ -606,16 +613,21 @@ class GrasppingScenarios():
                     lineIDs = self.draw_predicted_grasp(grasps[idx])
 
                     x, y, z, yaw, opening_len, obj_height = grasps[idx]
+                    # state = "noObjectFound"
+                    print("Performing final grasp, state: {}".format(state))
 
-                    if targetFound:
+                    if state == "targetGrasp":
                         ## Move item to target tray
                         succes_grasp, succes_target = env.targeted_grasp((x, y, z), yaw, opening_len, obj_height)
                         if succes_target:
                             self.write_temp_text("Target dropped successfully")
-                            state = DELIVERED
-                    else:
+                            state = "targetDelivered"
+                    elif state == "nonTargetGrasp":
                         ## Move item to red tray
                         succes_grasp, succes_target = env.grasp((x, y, z), yaw, opening_len, obj_height)
+                    else:
+                        ## No object recognized, move to analysis area
+                        succes_grasp, succes_target = env.move_to_recog_area((x, y, z), yaw, opening_len, obj_height)
 
                     ##########################################################################
                     ## PERFORMANCE ANALYSIS
@@ -637,7 +649,7 @@ class GrasppingScenarios():
                             for o in recogObjects.values():
                                 texts.append(o["text"])
                             self.remove_drawing(texts)
-                        if targetFound: 
+                        if state == "targetDelivered": 
                             self.remove_drawing(visualTargetBox)
 
                     env.reset_robot()

@@ -17,6 +17,7 @@ class Environment:
     GRIPPER_GRASPED_LIFT_HEIGHT = 1.4
     TARGET_ZONE_POS = [0.7, 0.0, 0.685]
     TARGET_ZONE_POS_2 = [-0.7, -0.1, 0.685]
+    RECOG_AREA_POS = [0.05, -0.52, 0.785]
     SIMULATION_STEP_DELAY = 0.0005 #speed of simulator - the lower the fatser ## should be a param
     FINGER_LENGTH = 0.06
     Z_TABLE_TOP = 0.785
@@ -168,8 +169,8 @@ class Environment:
 
         # Setup some Limit
         self.gripper_open_limit = (0.0, 0.1)
-        self.ee_position_limit = ((-0.7, 0.7),
-								  (-0.7, 0.7),
+        self.ee_position_limit = ((-0.8, 0.8),
+								  (-0.8, 0.8),
                                   (0.785, 1.4))
         self.reset_robot()
 
@@ -799,7 +800,7 @@ class Environment:
 
     def targeted_grasp(self, pos: tuple, roll: float, gripper_opening_length: float, obj_height: float, debug: bool = False):
             """
-            Method to perform grasp for the right basket
+            Method to perform grasp for the left basket
             pos [x y z]: The axis in real-world coordinate
             roll: float,   for grasp, it should be in [-pi/2, pi/2)
             """
@@ -838,7 +839,7 @@ class Environment:
                 return succes_target, succes_grasp
 
             # Move object to target zone
-            y_drop = self.TARGET_ZONE_POS[2] + z_offset + obj_height + 0.15
+            y_drop = self.TARGET_ZONE_POS_2[2] + z_offset + obj_height + 0.15
             y_orn = p.getQuaternionFromEuler([-np.pi*0.25, np.pi/2, 0.0])
 
             #self.move_away_arm()
@@ -859,6 +860,67 @@ class Environment:
 
             return succes_grasp, succes_target
 
+    def move_to_recog_area(self, pos: tuple, roll: float, gripper_opening_length: float, obj_height: float, debug: bool = False):
+        """
+        Method to perform grasp for the analysis area
+        pos [x y z]: The axis in real-world coordinate
+        roll: float,   for grasp, it should be in [-pi/2, pi/2)
+        """
+        succes_grasp, succes_target = False, False
+        grasped_obj_id = None
+
+        x, y, z = pos
+        # Substracht gripper finger length from z
+        z -= self.finger_length
+        z = np.clip(z, *self.ee_position_limit[2])
+
+        # Move above target
+        # self.reset_robot()
+        self.move_gripper(0.1)
+        orn = p.getQuaternionFromEuler([roll, np.pi/2, 0.0])
+        self.move_ee([x, y, self.GRIPPER_MOVING_HEIGHT+1, orn])
+
+        # Reduce grip to get a tighter grip
+        gripper_opening_length *= self.GRIP_REDUCTION
+
+        # Grasp and lift object
+        z_offset = self.calc_z_offset(gripper_opening_length)
+        self.move_ee([x, y, z + z_offset, orn])
+        # self.move_gripper(gripper_opening_length)
+        self.auto_close_gripper(check_contact=True)
+        for _ in range(15):
+            self.step_simulation()
+        self.move_ee([x, y, self.GRIPPER_MOVING_HEIGHT+1, orn])
+
+        # If the object has been grasped and lifted off the table
+        grasped_id = self.check_grasped_id()
+        if len(grasped_id) == 1:
+            succes_grasp = True
+            grasped_obj_id = grasped_id[0]
+        else:
+            return succes_target, succes_grasp
+
+        # Move object to target zone
+        y_drop = self.RECOG_AREA_POS[2] + z_offset + obj_height + 0.15
+        y_orn = p.getQuaternionFromEuler([-np.pi*0.25, np.pi/2, 0.0])
+
+        #self.move_away_arm()
+        self.move_ee([self.RECOG_AREA_POS[0],
+                    -0.3, 2.25, y_orn])
+        self.move_ee([self.RECOG_AREA_POS[0],
+                    self.RECOG_AREA_POS[1], y_drop, y_orn])
+        self.move_gripper(0.085)
+        self.move_ee([self.RECOG_AREA_POS[0], self.RECOG_AREA_POS[1],
+                    self.GRIPPER_MOVING_HEIGHT+1, y_orn])
+
+        # Wait then check if object is in target zone
+        for _ in range(50):
+            self.step_simulation()
+        if self.check_target_reached_2(grasped_obj_id):
+            succes_target = True
+            #self.remove_obj(grasped_obj_id)
+
+        return succes_grasp, succes_target
     def close(self):
         p.disconnect(self.physicsClient)
 
