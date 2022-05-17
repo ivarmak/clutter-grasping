@@ -107,8 +107,9 @@ def look_at_object(vis):
     weights2 = 'MRCNN_st300_20ep_augSeq_GT1_val0.18'
     weights3 = 'mask_rcnn_object_0032'
     weights4 = 'rand/rand_4000st/weights.bestVal=0.22.hdf5'
+    weights5 = 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5'
 
-    model, class_names = setup_mrcnn('custom', weights4)
+    model, class_names = setup_mrcnn('custom', weights5)
 
     objects = YcbObjects('objects/ycb_objects',
                         mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
@@ -118,7 +119,7 @@ def look_at_object(vis):
                 'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan', 'PowerDrill', 
                 'Scissors', 'Strawberry', 'TennisBall', 'TomatoSoupCan']
 
-    obj = 'Scissors'
+    obj = 'TomatoSoupCan'
 
     obj_path = 'objects/ycb_objects/Ycb' + obj + '/model.urdf'
 
@@ -127,7 +128,7 @@ def look_at_object(vis):
 
     # camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (IMG_SIZE, IMG_SIZE), 40)
     camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (MRCNN_IMG_SIZE, MRCNN_IMG_SIZE), 40)
-    env = Environment(camera, vis=False, finger_length=0.06)
+    env = Environment(camera, vis=True, finger_length=0.06)
 
     env.reset_robot()          
     env.remove_all_obj()                        
@@ -136,22 +137,23 @@ def look_at_object(vis):
     # env.load_isolated_obj(obj_path)
 
     # load turned object
-    # pitch = bool(random.getrandbits(1))
-    # roll = bool(random.getrandbits(1))
-    # env.load_turnable_obj(obj_path, pitch, roll)
+    pitch = bool(random.getrandbits(1))
+    roll = bool(random.getrandbits(1))
+    env.load_turnable_obj(obj_path, pitch, roll)
 
     ## load pile of objects
-    number_of_objects = 5
-    objects.shuffle_objects()
-    info = objects.get_n_first_obj_info(number_of_objects)
+    # number_of_objects = 5
+    # objects.shuffle_objects()
+    # info = objects.get_n_first_obj_info(number_of_objects)
 
     # env.create_packed(info)
-    env.create_pile(info)
+    # env.create_pile(info)
 
-    rgb, _, _ = camera.get_cam_img()
+    rgb, _, seg = camera.get_cam_img()
 
     box, mask, classID, score = evaluate_mrcnn(model, rgb)
     # print(classID)
+    plt.imshow(seg)
     visualize.display_instances(rgb, box, mask, classID, class_names, score)
 
 def look_at_banana(vis):
@@ -392,32 +394,50 @@ class GrasppingScenarios():
         for line in lineIDs:
             p.removeUserDebugItem(line)
     
-    def draw_box(box, img_size = 448, color = [0,0,1]):
-        if (box == []):
-            print("Cannot draw EMPTY BOUNDING BOX\n")
-            return box
-        
-        Z = 0.785 # height of workspace thus z variable line
+    def transform_coordinates(self, box, img_size=448):
         XMIN, XMAX, YMIN, YMAX = [-0.35, 0.45, -0.92, -0.12]
 
         y1, x1, y2, x2 = box
-        lines = []
 
         y1 = (((y1 / img_size) * 0.8) + abs(YMAX))*-1
         y2 = (((y2 / img_size) * 0.8) + abs(YMAX))*-1
         x1 = ((x1 / img_size) * 0.8) - abs(XMIN)
         x2 = ((x2 / img_size) * 0.8) - abs(XMIN)
 
+        return [y1,x1,y2,x2]
+
+    def draw_box(self, box, img_size = 448, color = [0,0,1]):
+        if (box == []):
+            print("Cannot draw EMPTY BOUNDING BOX\n")
+            return box
+        
+        Z = 0.785 # height of workspace thus z variable line
+        lines = []
+
+        newBox = self.transform_coordinates(box, img_size)
+        y1, x1, y2, x2 = newBox
+
         lines.append(p.addUserDebugLine([x1, y1, Z], [x1, y2, Z], color, lineWidth=3))
         lines.append(p.addUserDebugLine([x2, y1, Z], [x2, y2, Z], color, lineWidth=3))
         lines.append(p.addUserDebugLine([x1, y1, Z], [x2, y1, Z], color, lineWidth=3))
         lines.append(p.addUserDebugLine([x1, y2, Z], [x2, y2, Z], color, lineWidth=3))
 
+        self.write_temp_text("Grasping from box: ", [0,0,1])
         return lines
+
+    def write_temp_text(self, text, color = [0,0.5,0]):
+        debugID = p.addUserDebugText(text, [-0.0, -1.2, 0.8], color, textSize=2)
+        time.sleep(0.5)
+        p.removeUserDebugItem(debugID)
 
     def dummy_simulation_steps(self,n):
         for _ in range(n):
             p.stepSimulation()
+
+    def write_perm_text(self,previoustext, text, color = [0.5,0,0], loc = [-0.15,-0.52,1.92], textSize=2):
+        if previoustext != "": p.removeUserDebugItem(previoustext)
+        debugID = p.addUserDebugText(text, loc, color, textSize)
+        return debugID
 
     def is_there_any_object(self,camera):
         self.dummy_simulation_steps(10)
@@ -429,7 +449,17 @@ class GrasppingScenarios():
         else:
             return True         
 
+    def spawn_four_objects(self, objects, spawn_obj, env):
+        LOCATIONS = [(-0.1, -0.4), (-0.1, -0.6), (0.2, -0.6), (0.2, -0.4)]
+        random.shuffle(LOCATIONS)
+
+        for obj in spawn_obj:
+            path, mod_orn, mod_stiffness = objects.get_obj_info(obj)
+            env.load_obj_same_place(path, LOCATIONS[spawn_obj.index(obj)][0], LOCATIONS[spawn_obj.index(obj)][1], mod_orn, mod_stiffness)
+
+
     def isolated_target_scenario(self,runs, device, vis, output, debug):
+        model, class_names = setup_mrcnn('custom', 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5', 0.8)
         objects = YcbObjects('objects/ycb_objects',
                             mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
                             mod_stiffness=['Strawberry'])
@@ -441,71 +471,111 @@ class GrasppingScenarios():
         ## camera settings: cam_pos, cam_target, near, far, size, fov
         center_x, center_y, center_z = 0.05, -0.52, self.CAM_Z
         camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (self.IMG_SIZE, self.IMG_SIZE), 40)
+        mrcnn_cam = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (448, 448), 40)
         env = Environment(camera, vis=vis, debug=debug, finger_length=0.06)
         
         generator = GraspGenerator(self.network_path, camera, self.depth_radius, self.fig, self.IMG_SIZE, self.network_model, device)
         
+        targettext = ""
         objects.shuffle_objects()
-        for i in range(runs):
-            print("----------- run ", i+1, " -----------")
-            print ("network model = ", self.network_model)
-            print ("size of input image (W, H) = (", self.IMG_SIZE," ," ,self.IMG_SIZE, ")")
+        target_list = objects.obj_names.copy()
 
-            for obj_name in objects.obj_names:
-                print(obj_name)
+        IDLE, SEARCHING, FOUND, NOTFOUND, GRASPING, DELIVERED = 1,2,3,4,5,6
+
+        for target in target_list:
+            state = IDLE
+
+            for i in range(runs):
+                print("----------- run ", i+1, " -----------")
+                print ("network model = ", self.network_model)
+                print("\nTarget object = ", target)
+                if vis: targettext = self.write_perm_text(targettext, "Target: {}".format(target))
+                
+                ## Shuffle to-be-spawned-objects and remove target so as not to spawn twice
+                objects.shuffle_objects()
+                other_obj = objects.obj_names.copy()
+                other_obj.remove(target)
 
                 env.reset_robot()          
                 env.remove_all_obj()                        
-               
-                path, mod_orn, mod_stiffness = objects.get_obj_info(obj_name)
-                # env.load_isolated_obj(path, mod_orn, mod_stiffness)
-                path1 = 'objects/ycb_objects/YcbHammer/model.urdf'
-                env.load_obj_same_place(path1, -0.2, -0.7)
-                path2 = 'objects/ycb_objects/YcbStrawberry/model.urdf'
-                env.load_obj_same_place(path2, 0.3, -0.2)
-                
+
+                spawn_obj = [target] + other_obj[0:3]
+                self.spawn_four_objects(objects, spawn_obj, env)
+                print("Other objects: ", spawn_obj[1:])
+
                 self.dummy_simulation_steps(20)
 
                 number_of_attempts = self.ATTEMPTS
                 number_of_failures = 0
                 idx = 0 ## select the best grasp configuration
                 failed_grasp_counter = 0
-                while self.is_there_any_object(camera) and number_of_failures < number_of_attempts:     
+
+                while self.is_there_any_object(camera) and number_of_failures < number_of_attempts and state != DELIVERED:     
                     
-                    bgr, depth, _ = camera.get_cam_img()
-                    plt.imshow(bgr)
-                    ##convert BGR to RGB
-                    rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-                    plt.imshow(rgb)
+                    rgb, depth, _ = camera.get_cam_img()
+
                     ##########################################################################
-                    ## MRCNN PART
+                    ## RECOGNITION
                     ##########################################################################
+                    
+                    state = SEARCHING
 
-                    model, class_names = setup_mrcnn('custom', 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5')
+                    mrcnnRGB, _, _ = mrcnn_cam.get_cam_img()   
+                    box, mask, classIDs, score = evaluate_mrcnn(model, mrcnnRGB)
 
-                    cam2 = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (448, 448), 40)
-                    mrcnnRGB, _, _ = cam2.get_cam_img()   
-                    # box, mask, classID, score = evaluate_mrcnn(model, mrcnnRGB)
-
-                    # visualize.display_instances(rgb, box, mask, classID, class_names, score)
+                    # visualize.display_instances(mrcnnRGB, box, mask, classIDs, class_names, score)
                     bbox = []
+                    targetID = class_names.index(target)
+                    targetFound = False
 
-                    # if (14 in classID):
-                    #     print('STRAWBERRY FOUND')
-                    #     bananaFound = True
+                    
 
-                    #     result = np.where(classID == 14)
-                    #     index = result[0][0]
-                    #     strawberryBox = box[index]
+                    recogObjects = {}
 
-                    #     ## Resize to 224 for GR ConvNet
-                    #     bbox = (strawberryBox/2).astype(int)
-                    #     draw_box(bbox, 224)
+                    for j in range(classIDs.size):
+                        found_obj = class_names[classIDs[j]]
+                        convBox = self.transform_coordinates(box[j])
+                        obj = {
+                            "id" : classIDs[j],
+                            "name": found_obj,
+                            "box": box[j],
+                            "convBox": convBox,
+                            "mask": mask[j],
+                            "score": score[j],
+                            "text": self.write_perm_text("", class_names[classIDs[j]], [0,0,0.5], [convBox[3],convBox[2],0.85], 1)
+                        }
+                        recogObjects[j] = obj
+                        print("Found: {}, score: {:.2f}".format(found_obj, score[j]))
+                        
+                    # print(recogObjects)
+                    if (targetID in classIDs):
+                        print('TARGET {} FOUND'.format(target))
+                        targettext = self.write_perm_text(targettext, "{} found".format(target), [0,0.5,0])
+                        targetFound = True
 
-                    ###########################################################################
+                        result = np.where(classIDs == targetID)
+                        index = result[0][0]
+                        targetBox = box[index]
 
-                    grasps, save_name = generator.predict_grasp( rgb, depth, bbox, n_grasps=number_of_attempts, show_output=output)
+                        ## Resize to 224 for GR ConvNet
+                        bbox = (targetBox/2).astype(int)
+                        if vis: visualTargetBox = self.draw_box(bbox, 224,[0,0.5,0])
+                    else:
+                        if vis: 
+                            self.write_temp_text("Not found", [0.5,0,0])
+                            self.write_temp_text("Grasping other object", [0.5,0,0])
+                        print("Target not found, grasping other object")
+
+                    ##########################################################################
+                    ## GRASPING
+                    ##########################################################################
+
+                    ## Grasp from bounding box
+                    grasps, save_name = generator.predict_grasp(rgb, depth, bbox, n_grasps=number_of_attempts, show_output=output)
+
+                    ## Grasp from table
                     # grasps, save_name = generator.predict_grasp( rgb, depth, n_grasps=number_of_attempts, show_output=output)
+
                     if (grasps == []):
                         self.dummy_simulation_steps(50)
                         #print ("could not find a grasp point!")
@@ -518,12 +588,11 @@ class GrasppingScenarios():
 
                     #print ("grasps.length = ", len(grasps))
                     if (idx > len(grasps)-1):  
-                        print ("idx = ", idx)
                         if len(grasps) > 0 :
-                           idx = len(grasps)-1
+                            idx = len(grasps)-1
                         else:
-                           number_of_failures += 1
-                           continue    
+                            number_of_failures += 1
+                            continue    
 
                     if vis:
                         LID =[]
@@ -537,27 +606,45 @@ class GrasppingScenarios():
                     lineIDs = self.draw_predicted_grasp(grasps[idx])
 
                     x, y, z, yaw, opening_len, obj_height = grasps[idx]
-                    succes_grasp, succes_target = env.grasp_2((x, y, z), yaw, opening_len, obj_height)
 
-                    data.add_try(obj_name)
-                   
+                    if targetFound:
+                        ## Move item to target tray
+                        succes_grasp, succes_target = env.targeted_grasp((x, y, z), yaw, opening_len, obj_height)
+                        if succes_target:
+                            self.write_temp_text("Target dropped successfully")
+                            state = DELIVERED
+                    else:
+                        ## Move item to red tray
+                        succes_grasp, succes_target = env.grasp((x, y, z), yaw, opening_len, obj_height)
+
+                    ##########################################################################
+                    ## PERFORMANCE ANALYSIS
+                    ##########################################################################
+
+                    ## TODO: look at target inst below and if performance is saved correctly 
+                    data.add_try(target)
+                    
                     if succes_grasp:
-                        data.add_succes_grasp(obj_name)
+                        data.add_succes_grasp(target)
                     if succes_target:
-                        data.add_succes_target(obj_name)
+                        data.add_succes_target(target)
 
                     ## remove visualized grasp configuration 
                     if vis:
                         self.remove_drawing(lineIDs)
+                        if recogObjects != {}:
+                            texts = []
+                            for o in recogObjects.values():
+                                texts.append(o["text"])
+                            self.remove_drawing(texts)
+                        if targetFound: 
+                            self.remove_drawing(visualTargetBox)
 
                     env.reset_robot()
                     
                     if succes_target:
                         number_of_failures = 0
-                        if vis:
-                            debugID = p.addUserDebugText("success", [-0.0, -0.9, 0.8], [0,0.50,0], textSize=2)
-                            time.sleep(0.25)
-                            p.removeUserDebugItem(debugID)
+                        if vis: self.write_temp_text("succes")
                         
                         if save_name is not None:
                             os.rename(save_name + '.png', save_name + f'_SUCCESS_grasp{i}.png')
@@ -568,14 +655,11 @@ class GrasppingScenarios():
                         idx +=1        
                         #env.reset_robot() 
                         # env.remove_all_obj()                        
-                
-                        if vis:
-                            debugID = p.addUserDebugText("failed", [-0.0, -0.9, 0.8], [0.5,0,0], textSize=2)
-                            time.sleep(0.25)
-                            p.removeUserDebugItem(debugID)
+                        if vis: self.write_temp_text("failed", [0.5,0,0])
 
         data.write_json(self.network_model)
         summarize(data.save_dir, runs, self.network_model)
+
 
     def isolated_obj_scenario(self,runs, device, vis, output, debug):
 
@@ -607,11 +691,7 @@ class GrasppingScenarios():
                 env.remove_all_obj()                        
                
                 path, mod_orn, mod_stiffness = objects.get_obj_info(obj_name)
-                # env.load_isolated_obj(path, mod_orn, mod_stiffness)
-                path1 = 'objects/ycb_objects/YcbHammer/model.urdf'
-                env.load_obj_same_place(path1, -0.2, -0.7)
-                path2 = 'objects/ycb_objects/YcbStrawberry/model.urdf'
-                env.load_obj_same_place(path2, 0.3, -0.2)
+                env.load_isolated_obj(path, mod_orn, mod_stiffness)
                 
                 self.dummy_simulation_steps(20)
 
@@ -622,39 +702,10 @@ class GrasppingScenarios():
                 while self.is_there_any_object(camera) and number_of_failures < number_of_attempts:     
                     
                     bgr, depth, _ = camera.get_cam_img()
-                    plt.imshow(bgr)
                     ##convert BGR to RGB
                     rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-                    plt.imshow(rgb)
-                    ##########################################################################
-                    ## MRCNN PART
-                    ##########################################################################
-
-                    model, class_names = setup_mrcnn('custom', 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5')
-
-                    cam2 = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (448, 448), 40)
-                    mrcnnRGB, _, _ = cam2.get_cam_img()   
-                    # box, mask, classID, score = evaluate_mrcnn(model, mrcnnRGB)
-
-                    # visualize.display_instances(rgb, box, mask, classID, class_names, score)
-                    bbox = []
-
-                    # if (14 in classID):
-                    #     print('STRAWBERRY FOUND')
-                    #     bananaFound = True
-
-                    #     result = np.where(classID == 14)
-                    #     index = result[0][0]
-                    #     strawberryBox = box[index]
-
-                    #     ## Resize to 224 for GR ConvNet
-                    #     bbox = (strawberryBox/2).astype(int)
-                    #     draw_box(bbox, 224)
-
-                    ###########################################################################
-
-                    grasps, save_name = generator.predict_grasp( rgb, depth, bbox, n_grasps=number_of_attempts, show_output=output)
-                    # grasps, save_name = generator.predict_grasp( rgb, depth, n_grasps=number_of_attempts, show_output=output)
+                    
+                    grasps, save_name = generator.predict_grasp( rgb, depth, n_grasps=number_of_attempts, show_output=output)
                     if (grasps == []):
                         self.dummy_simulation_steps(50)
                         #print ("could not find a grasp point!")
