@@ -32,6 +32,7 @@ class Environment:
         self.obj_ids = []
         self.obj_positions = []
         self.obj_orientations = []
+        self.obj_names = []
 
         if gripper_type not in ('85', '140'):
             raise NotImplementedError(
@@ -374,11 +375,13 @@ class Environment:
         self.obj_orientations.pop(idx)
         self.obj_positions.pop(idx)
         self.obj_ids.pop(idx)
+        self.obj_names.pop(idx)
         p.removeBody(obj_id)
 
     def remove_all_obj(self):
         self.obj_positions.clear()
         self.obj_orientations.clear()
+        self.obj_names.clear()
         for obj_id in self.obj_ids:
             p.removeBody(obj_id)
         self.obj_ids.clear()
@@ -426,6 +429,11 @@ class Environment:
         self.obj_ids.append(obj_id)
         self.obj_positions.append(pos)
         self.obj_orientations.append(orn)
+
+        name = path.replace('objects/ycb_objects/Ycb','')
+        name = name.replace('/model.urdf', '')
+        self.obj_names.append(name)
+
         return obj_id, pos, orn
 
     def load_turned_obj(self, path, pos, yaw, roll=0, pitch=0, mod_orn=False, mod_stiffness=False):
@@ -684,6 +692,7 @@ class Environment:
             print('Failed to reach the target')
         return False, p.getLinkState(self.robot_id, self.eef_id)[0:2]
 
+    ### OLD move_ee function which was working less optimal 
     # def move_ee(self, action, max_step=300, check_collision_config=None, custom_velocity=None,
     #             try_close_gripper=False, verbose=False):
     #     x, y, z, orn = action
@@ -794,17 +803,84 @@ class Environment:
             succes_target = True
             #self.remove_obj(grasped_obj_id)
 
-        
-
         return succes_grasp, succes_target
 
-    def targeted_grasp(self, pos: tuple, roll: float, gripper_opening_length: float, obj_height: float, debug: bool = False):
+    def non_target_grasp(self, pos: tuple, roll: float, gripper_opening_length: float, obj_height: float, target: str, debug: bool = False):
+        """
+        Method to perform grasp
+        pos [x y z]: The axis in real-world coordinate
+        roll: float,   for grasp, it should be in [-pi/2, pi/2)
+        """
+        succes_grasp, succes_target, succes_object = False, False, True
+        grasped_obj_id = None
+        
+        x, y, z = pos
+        # Substracht gripper finger length from z
+        z -= self.finger_length
+        z = np.clip(z, *self.ee_position_limit[2])
+
+        # Move above target
+        # self.reset_robot()
+        self.move_gripper(0.1)
+        orn = p.getQuaternionFromEuler([roll, np.pi/2, 0.0])
+        self.move_ee([x, y, self.GRIPPER_MOVING_HEIGHT, orn])
+
+        # Reduce grip to get a tighter grip
+        gripper_opening_length *= self.GRIP_REDUCTION
+
+        # Grasp and lift object
+        z_offset = self.calc_z_offset(gripper_opening_length)
+        self.move_ee([x, y, z + z_offset, orn])
+        # self.move_gripper(gripper_opening_length)
+        self.auto_close_gripper(check_contact=True)
+        for _ in range(40):
+            self.step_simulation()
+        self.move_ee([x, y, self.GRIPPER_MOVING_HEIGHT, orn])
+
+        # If the object has been grasped and lifted off the table
+        grasped_id = self.check_grasped_id()
+        
+        for id in grasped_id:
+            idx = self.obj_ids.index(id)
+            if self.obj_names[idx] == target:
+                print("Grasped object {} is target {}, it should be nonTarget...".format(self.obj_names[idx],target))
+                succes_object = False
+        if len(grasped_id) == 1:
+            succes_grasp = True
+            grasped_obj_id = grasped_id[0]
+        else:
+            return succes_target, succes_grasp, succes_object
+
+        # Move object to target zone
+        y_drop = self.TARGET_ZONE_POS[2] + z_offset + obj_height + 0.15
+        y_orn = p.getQuaternionFromEuler([-np.pi*0.25, np.pi/2, 0.0])
+
+        #self.move_arm_away()
+        self.move_ee([self.TARGET_ZONE_POS[0],
+                     self.TARGET_ZONE_POS[1], 1.25, y_orn])
+        self.move_ee([self.TARGET_ZONE_POS[0],
+                     self.TARGET_ZONE_POS[1], y_drop, y_orn])
+        self.move_gripper(0.085)
+        self.move_ee([self.TARGET_ZONE_POS[0], self.TARGET_ZONE_POS[1],
+                     self.GRIPPER_MOVING_HEIGHT, y_orn])
+
+        # Wait then check if object is in target zone
+        for _ in range(20):
+            self.step_simulation()
+
+        if self.check_target_reached(grasped_obj_id):
+            succes_target = True
+            #self.remove_obj(grasped_obj_id)
+
+        return succes_grasp, succes_target, succes_object
+
+    def targeted_grasp(self, pos: tuple, roll: float, gripper_opening_length: float, obj_height: float, target: str, debug: bool = False):
             """
             Method to perform grasp for the left basket
             pos [x y z]: The axis in real-world coordinate
             roll: float,   for grasp, it should be in [-pi/2, pi/2)
             """
-            succes_grasp, succes_target = False, False
+            succes_grasp, succes_target, succes_object = False, False, False
             grasped_obj_id = None
 
             x, y, z = pos
@@ -835,8 +911,14 @@ class Environment:
             if len(grasped_id) == 1:
                 succes_grasp = True
                 grasped_obj_id = grasped_id[0]
+
+                idx = self.obj_ids.index(grasped_obj_id)
+                grasped_obj_name = self.obj_names[idx]
+
+                if grasped_obj_name == target:
+                    succes_object = True
             else:
-                return succes_target, succes_grasp
+                return succes_target, succes_grasp, succes_object
 
             # Move object to target zone
             y_drop = self.TARGET_ZONE_POS_2[2] + z_offset + obj_height + 0.15
@@ -858,7 +940,8 @@ class Environment:
                 succes_target = True
                 #self.remove_obj(grasped_obj_id)
 
-            return succes_grasp, succes_target
+            if not succes_object: print("Grasped object {} is not target {}...".format(grasped_obj_name, target))
+            return succes_grasp, succes_target, succes_object
 
     def move_to_recog_area(self, pos: tuple, roll: float, gripper_opening_length: float, obj_height: float, debug: bool = False):
         """
@@ -921,6 +1004,7 @@ class Environment:
             #self.remove_obj(grasped_obj_id)
 
         return succes_grasp, succes_target
+
     def close(self):
         p.disconnect(self.physicsClient)
 
