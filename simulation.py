@@ -544,9 +544,9 @@ class GrasppingScenarios():
             self.state = "idle"
 
             for i in range(runs):
-                print("----------- run ", i+1, " -----------")
-                print ("network model = ", self.network_model)
-                print("\nTarget object = ", target)
+                # print("----------- run ", i+1, " -----------")
+                # print ("network model = ", self.network_model)
+                # print("\nTarget object = ", target)
                 if vis: targettext = self.write_perm_text(targettext, "Target: {}".format(target))
                 
                 ## Shuffle to-be-spawned-objects and remove target so as not to spawn twice
@@ -559,7 +559,7 @@ class GrasppingScenarios():
 
                 spawn_obj = [target] + other_obj[0:3]
                 self.spawn_four_objects(objects, spawn_obj, env)
-                print("Other objects: {}".format(spawn_obj[1:]))
+                # print("Other objects: {}".format(spawn_obj[1:]))
 
                 self.dummy_simulation_steps(20)
 
@@ -571,7 +571,6 @@ class GrasppingScenarios():
 
                 while self.is_there_any_object(camera) and number_of_failures < number_of_attempts and self.state != "targetDelivered":     
                     
-                    print("STATE start: ", self.state)
                     rgb, depth, _ = camera.get_cam_img()
 
                     ##########################################################################
@@ -585,7 +584,6 @@ class GrasppingScenarios():
 
                     recogObjects, targetIndex, objectTexts = self.run_mrcnn(model, class_names, mrcnnRGB, min_conf, target)
 
-                    print("STATE recog: ", self.state)
                     ## Target is found on the table, find best grasp point inside bounding box    
                     if (self.state == "targetFound"):
                         self.state = "targetGrasp"
@@ -628,8 +626,6 @@ class GrasppingScenarios():
                     ##########################################################################
                     ## GRASPING
                     ##########################################################################
-
-                    print("STATE grasp: ", self.state)
 
                     ## Grasp from bounding box, if empty grasp is freely chosen
                     grasps, save_name = generator.predict_grasp(rgb, depth, bbox, n_grasps=number_of_attempts, show_output=output)
@@ -688,7 +684,7 @@ class GrasppingScenarios():
                     ##########################################################################
                     ## PERFORMANCE ANALYSIS
                     ##########################################################################
-                    print("STATE performance: ", self.state)
+
                     ## TODO: look at target inst below and if performance is saved correctly 
                     data.add_try(target)
                     
