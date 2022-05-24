@@ -445,8 +445,15 @@ def detect_grasps(q_img, ang_img, bbox, width_img=None, no_grasps=1):
     if (bbox != []):
         ## Detect grasp within bounding box
         new_q = np.zeros((224,224))
+        
         y1, x1, y2, x2 = bbox
-
+        ## add a buffer zone so bounding boxes that are a little to tight do not decrease grasp performance
+        padding = 3
+        y1 -= padding
+        x1 -= padding
+        y2 += padding
+        x2 += padding
+        
         new_q[y1:y2, x1:x2] = q_img[y1:y2, x1:x2]
         print("Grasping from bbox")
         local_max = peak_local_max(new_q, min_distance=20, threshold_abs=0.2, num_peaks=no_grasps)
