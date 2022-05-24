@@ -465,7 +465,7 @@ class GrasppingScenarios():
 
         for j in range(classIDs.size):
             if score[j] > min_conf:
-                self.state == "nonTargetFound"
+                self.state = "nonTargetFound"
                 found_obj = class_names[classIDs[j]]
                 if found_obj == target and self.state != "targetFound": 
                     self.state = "targetFound"
@@ -626,7 +626,7 @@ class GrasppingScenarios():
                     ##########################################################################
                     ## GRASPING
                     ##########################################################################
-                    
+
                     print("STATE grasp: ", self.state)
 
                     ## Grasp from bounding box, if empty grasp is freely chosen
@@ -686,7 +686,7 @@ class GrasppingScenarios():
                     ##########################################################################
                     ## PERFORMANCE ANALYSIS
                     ##########################################################################
-
+                    print("STATE performance: ", self.state)
                     ## TODO: look at target inst below and if performance is saved correctly 
                     data.add_try(target)
                     
