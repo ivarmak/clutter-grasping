@@ -465,11 +465,13 @@ class GrasppingScenarios():
 
         for j in range(classIDs.size):
             if score[j] > min_conf:
-                self.state = "nonTargetFound"
+                
                 found_obj = class_names[classIDs[j]]
-                if found_obj == target and self.state != "targetFound": 
-                    self.state = "targetFound"
-                    targetIndex = j
+                if self.state != "targetFound":
+                    self.state = "nonTargetFound"
+                    if found_obj == target: 
+                        self.state = "targetFound"
+                        targetIndex = j
                 convBox = self.transform_coordinates(box[j])
                 obj = {
                     "id" : classIDs[j],
