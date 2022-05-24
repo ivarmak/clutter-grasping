@@ -455,7 +455,7 @@ def detect_grasps(q_img, ang_img, bbox, width_img=None, no_grasps=1):
         x2 += padding
         
         new_q[y1:y2, x1:x2] = q_img[y1:y2, x1:x2]
-        print("Grasping from bbox")
+        # print("Grasping from bbox")
         local_max = peak_local_max(new_q, min_distance=20, threshold_abs=0.2, num_peaks=no_grasps)
         
     else: 
