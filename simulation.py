@@ -367,6 +367,7 @@ class GrasppingScenarios():
         self.ATTEMPTS = 3
         self.fig = plt.figure(figsize=(10, 10))
         self.state = "idle"
+        self.grasp_idx = 0
        
                 
     def draw_predicted_grasp(self,grasps,color = [0,0,1],lineIDs = []):
@@ -391,8 +392,9 @@ class GrasppingScenarios():
         return lineIDs
     
     def remove_drawing(self,lineIDs):
-        for line in lineIDs:
-            p.removeUserDebugItem(line)
+        if lineIDs != []:
+            for line in lineIDs:
+                p.removeUserDebugItem(line)
     
     def transform_coordinates(self, box, img_size=448):
         XMIN, XMAX, YMIN, YMAX = [-0.35, 0.45, -0.92, -0.12]
@@ -415,7 +417,7 @@ class GrasppingScenarios():
         lines = []
 
         ## add a buffer zone so bounding boxes that are a little to tight do not decrease grasp performance
-        padding = 3
+        padding = 4
         box[0] -= padding
         box[1] -= padding
         box[2] += padding
@@ -448,7 +450,7 @@ class GrasppingScenarios():
 
     def run_mrcnn(self, model, class_names, rgb, min_conf, target):
         print("\nRecognition phase...")
-        print("Confidence level: ", min_conf)
+        print("Confidence threshold: ", min_conf)
 
         start = time.time()
 
@@ -468,9 +470,9 @@ class GrasppingScenarios():
                 
                 found_obj = class_names[classIDs[j]]
                 if self.state != "targetFound":
-                    self.state = "nonTargetFound"
+                    self.change_state("nonTargetFound")
                     if found_obj == target: 
-                        self.state = "targetFound"
+                        self.change_state("targetFound")
                         targetIndex = j
                 convBox = self.transform_coordinates(box[j])
                 obj = {
@@ -505,6 +507,10 @@ class GrasppingScenarios():
             path, mod_orn, mod_stiffness = objects.get_obj_info(obj)
             env.load_obj_same_place(path, LOCATIONS[spawn_obj.index(obj)][0], LOCATIONS[spawn_obj.index(obj)][1], mod_orn, mod_stiffness)
 
+    def change_state(self, newState):
+        # print("\nSTATECHANGE: {} -> {}".format(self.state, newState))
+        self.state = newState
+        
 
     def isolated_target_scenario(self,runs, device, vis, output, debug):
         model, class_names = setup_mrcnn('custom', 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5', 0.4)
@@ -533,12 +539,15 @@ class GrasppingScenarios():
         targetGrasp
         nonTargetGrasp
         movedToRecogArea
+        graspFailed
         targetDelivered
         """
 
         targettext = ""
         objects.shuffle_objects()
         target_list = objects.obj_names.copy()
+        
+        # target_list = ["MasterChefCan"] + target_list
 
         for target in target_list:
             self.state = "idle"
@@ -565,11 +574,16 @@ class GrasppingScenarios():
 
                 number_of_attempts = self.ATTEMPTS
                 number_of_failures = 0
-                idx = 0 ## select the best grasp configuration
-                failed_grasp_counter = 0
+
+                objectTexts = []
+                visualTargetBox = []
+                targetDelivered = False
+
+                self.grasp_idx = 0 ## select the best grasp configuration
+                failed_to_find_grasp_count = 0
                 min_conf = 0.85
 
-                while self.is_there_any_object(camera) and number_of_failures < number_of_attempts and self.state != "targetDelivered":     
+                while self.is_there_any_object(camera) and number_of_failures < number_of_attempts and targetDelivered != True:     
                     
                     rgb, depth, _ = camera.get_cam_img()
 
@@ -586,7 +600,7 @@ class GrasppingScenarios():
 
                     ## Target is found on the table, find best grasp point inside bounding box    
                     if (self.state == "targetFound"):
-                        self.state = "targetGrasp"
+                        self.change_state("targetGrasp")
                         print('\nTARGET {} FOUND'.format(target))
                         targettext = self.write_perm_text(targettext, "{} found".format(target), [0,0.5,0])
 
@@ -597,7 +611,7 @@ class GrasppingScenarios():
 
                     ## At least one object found on table, grasp non-target object with highest score
                     elif (self.state == "nonTargetFound"):
-                        self.state = "nonTargetGrasp"
+                        self.change_state("nonTargetGrasp")
                         nonTarget = recogObjects[0]
                         bbox = (nonTarget["box"]/2).astype(int)
                         
@@ -617,7 +631,7 @@ class GrasppingScenarios():
 
                     ## No object is found on table, freely chosen grasp towards recognition area
                     else:
-                        self.state = "nothingFound"
+                        self.change_state("nothingFound")
                         print("\nNo object found on table")
                         if vis: 
                             self.write_temp_text("Object(s) on table, but not recognized", [0.5,0,0])
@@ -627,28 +641,28 @@ class GrasppingScenarios():
                     ## GRASPING
                     ##########################################################################
 
-                    ## Grasp from bounding box, if empty grasp is freely chosen
+                    ## Grasp from bounding box, if empty, grasp is freely chosen
                     grasps, save_name = generator.predict_grasp(rgb, depth, bbox, n_grasps=number_of_attempts, show_output=output)
 
                     ## NO GRASP POINT FOUND
                     if (grasps == []):
                         self.dummy_simulation_steps(50)
-                        if failed_grasp_counter > 3:
+                        if failed_to_find_grasp_count > 3:
                             print("Failed to find a grasp points > 3 times. Skipping.")
                             break
                             
-                        failed_grasp_counter += 1                 
-                        continue
+                        failed_to_find_grasp_count += 1                 
+                        continue                        
 
                     ## idx is iterated after incorrect grasp
                     ## check if a next grasp is still available
-                    if (idx > len(grasps)-1):  
+                    if (self.grasp_idx > len(grasps)-1):  
                         if len(grasps) > 0 :
-                            idx = len(grasps)-1
+                            self.grasp_idx = len(grasps)-1
                         else:
                             number_of_failures += 1
-                            continue    
-                    
+                            continue
+
                     ## DRAWING GRASP
                     if vis:
                         LID =[]
@@ -657,33 +671,45 @@ class GrasppingScenarios():
                         time.sleep(0.5)
                         self.remove_drawing(LID)
                         self.dummy_simulation_steps(10)    
-                    lineIDs = self.draw_predicted_grasp(grasps[idx])
+                    lineIDs = self.draw_predicted_grasp(grasps[self.grasp_idx])
 
-                    x, y, z, yaw, opening_len, obj_height = grasps[idx]
-                    print("Performing final grasp, state: {}".format(self.state))
+                    x, y, z, yaw, opening_len, obj_height = grasps[self.grasp_idx]
+                    # print("Performing final grasp, state: {}".format(self.state))
                     
                     ## Target found, move item to target tray
                     if self.state == "targetGrasp":
                         succes_grasp, succes_target, succes_object = env.targeted_grasp((x, y, z), yaw, opening_len, obj_height, target)
-                        print("Succesfully grasped target object == {}\n".format(succes_object))
+                        print("Succesfully grasped target object == {}".format(succes_object))
                         if succes_target:
                             self.write_temp_text("Target dropped successfully")
-                            self.state = "targetDelivered"
+                            # self.change_state("targetDelivered")
+                            targetDelivered = True
+                        else:
+                            targettext = self.write_perm_text(targettext, "Target: {}".format(target))
 
                     ## Non-target object recognized, move item to red tray
                     elif self.state == "nonTargetGrasp":
                         succes_grasp, succes_target, succes_object = env.non_target_grasp((x, y, z), yaw, opening_len, obj_height, target)
-                        print("Succesfully grasped nontarget object == {}\n".format(succes_object))
+                        print("Succesfully grasped nontarget object == {}".format(succes_object))
 
                     ## No object recognized, move to analysis area
                     elif self.state == "nothingFound":
                         succes_grasp, succes_target = env.move_to_recog_area((x, y, z), yaw, opening_len, obj_height)
-                        self.state = "movedToRecogArea"
+                        self.change_state("movedToRecogArea")
 
+                    ## Change grasp if failed, set to std value if success
+                    if not succes_grasp:
+                        self.grasp_idx += 1
+                        self.change_state("graspFailed")
+                    elif succes_grasp:
+                        self.grasp_idx = 0
                     
                     ##########################################################################
                     ## PERFORMANCE ANALYSIS
                     ##########################################################################
+
+                    print("\nPerformance print, state: ", self.state)
+                    print("succes_grasp {}\nsucces_target {}".format(succes_grasp, succes_target))
 
                     ## TODO: look at target inst below and if performance is saved correctly 
                     data.add_try(target)
@@ -696,10 +722,8 @@ class GrasppingScenarios():
                     ## remove visualized grasp configuration 
                     if vis:
                         self.remove_drawing(lineIDs)
-                        if self.state != "nothingRecognized":
-                            self.remove_drawing(objectTexts)
-                        if self.state == "targetGrasp" or self.state == "targetDelivered": 
-                            self.remove_drawing(visualTargetBox)
+                        self.remove_drawing(objectTexts)
+                        self.remove_drawing(visualTargetBox)
 
                     env.reset_robot()
                     
@@ -710,297 +734,15 @@ class GrasppingScenarios():
                         if save_name is not None:
                             os.rename(save_name + '.png', save_name + f'_SUCCESS_grasp{i}.png')
                         
-
                     else:
-                        number_of_failures += 1
-                        idx +=1        
-                        #env.reset_robot() 
-                        # env.remove_all_obj()                        
+                        number_of_failures += 1                    
                         if vis: self.write_temp_text("failed", [0.5,0,0])
 
         data.write_json(self.network_model)
         summarize(data.save_dir, runs, self.network_model)
 
 
-    def isolated_obj_scenario(self,runs, device, vis, output, debug):
-
-        objects = YcbObjects('objects/ycb_objects',
-                            mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
-                            mod_stiffness=['Strawberry'])
-
-        
-        ## reporting the results at the end of experiments in the results folder
-        data = IsolatedObjData(objects.obj_names, runs, 'results')
-
-        ## camera settings: cam_pos, cam_target, near, far, size, fov
-        center_x, center_y, center_z = 0.05, -0.52, self.CAM_Z
-        camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (self.IMG_SIZE, self.IMG_SIZE), 40)
-        env = Environment(camera, vis=vis, debug=debug, finger_length=0.06)
-        
-        generator = GraspGenerator(self.network_path, camera, self.depth_radius, self.fig, self.IMG_SIZE, self.network_model, device)
-        
-        objects.shuffle_objects()
-        for i in range(runs):
-            print("----------- run ", i+1, " -----------")
-            print ("network model = ", self.network_model)
-            print ("size of input image (W, H) = (", self.IMG_SIZE," ," ,self.IMG_SIZE, ")")
-
-            for obj_name in objects.obj_names:
-                print(obj_name)
-
-                env.reset_robot()          
-                env.remove_all_obj()                        
-               
-                path, mod_orn, mod_stiffness = objects.get_obj_info(obj_name)
-                env.load_isolated_obj(path, mod_orn, mod_stiffness)
-                
-                self.dummy_simulation_steps(20)
-
-                number_of_attempts = self.ATTEMPTS
-                number_of_failures = 0
-                idx = 0 ## select the best grasp configuration
-                failed_grasp_counter = 0
-                while self.is_there_any_object(camera) and number_of_failures < number_of_attempts:     
-                    
-                    bgr, depth, _ = camera.get_cam_img()
-                    ##convert BGR to RGB
-                    rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-                    
-                    grasps, save_name = generator.predict_grasp( rgb, depth, n_grasps=number_of_attempts, show_output=output)
-                    if (grasps == []):
-                        self.dummy_simulation_steps(50)
-                        #print ("could not find a grasp point!")
-                        if failed_grasp_counter > 3:
-                            print("Failed to find a grasp points > 3 times. Skipping.")
-                            break
-                            
-                        failed_grasp_counter += 1                 
-                        continue
-
-                    #print ("grasps.length = ", len(grasps))
-                    if (idx > len(grasps)-1):  
-                        print ("idx = ", idx)
-                        if len(grasps) > 0 :
-                           idx = len(grasps)-1
-                        else:
-                           number_of_failures += 1
-                           continue    
-
-                    if vis:
-                        LID =[]
-                        for g in grasps:
-                            LID = self.draw_predicted_grasp(g,color=[1,0,1],lineIDs=LID)
-                        time.sleep(0.5)
-                        self.remove_drawing(LID)
-                        self.dummy_simulation_steps(10)
-                        
-
-                    lineIDs = self.draw_predicted_grasp(grasps[idx])
-
-                    x, y, z, yaw, opening_len, obj_height = grasps[idx]
-                    succes_grasp, succes_target = env.grasp_2((x, y, z), yaw, opening_len, obj_height)
-
-                    data.add_try(obj_name)
-                   
-                    if succes_grasp:
-                        data.add_succes_grasp(obj_name)
-                    if succes_target:
-                        data.add_succes_target(obj_name)
-
-                    ## remove visualized grasp configuration 
-                    if vis:
-                        self.remove_drawing(lineIDs)
-
-                    env.reset_robot()
-                    
-                    if succes_target:
-                        number_of_failures = 0
-                        if vis:
-                            debugID = p.addUserDebugText("success", [-0.0, -0.9, 0.8], [0,0.50,0], textSize=2)
-                            time.sleep(0.25)
-                            p.removeUserDebugItem(debugID)
-                        
-                        if save_name is not None:
-                            os.rename(save_name + '.png', save_name + f'_SUCCESS_grasp{i}.png')
-                        
-
-                    else:
-                        number_of_failures += 1
-                        idx +=1        
-                        #env.reset_robot() 
-                        # env.remove_all_obj()                        
-                
-                        if vis:
-                            debugID = p.addUserDebugText("failed", [-0.0, -0.9, 0.8], [0.5,0,0], textSize=2)
-                            time.sleep(0.25)
-                            p.removeUserDebugItem(debugID)
-
-        data.write_json(self.network_model)
-        summarize(data.save_dir, runs, self.network_model)
-
-
-    def packed_or_pile_scenario(self,runs, scenario, device, vis, output, debug):
-        
-        ## reporting the results at the end of experiments in the results folder
-        number_of_objects = 10
-        if scenario=='packed':
-            objects = YcbObjects('objects/ycb_objects',
-                            mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
-                            mod_stiffness=['Strawberry'],
-                            exclude=['CrackerBox'])
-            
-            data = PackPileData(number_of_objects, runs, 'results', 'packed')
-
-        elif scenario=='pile':
-            objects = YcbObjects('objects/ycb_objects',
-                            mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
-                            mod_stiffness=['Strawberry'],
-                            exclude=['CrackerBox'])
-
-            data = PackPileData(number_of_objects, runs, 'results', self.network_model, 'pile')
-
-
-        center_x, center_y, center_z = 0.05, -0.52, self.CAM_Z
-        camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (self.IMG_SIZE, self.IMG_SIZE), 40)
-        env = Environment(camera, vis=vis, debug=debug, finger_length=0.06)
-        
-        generator = GraspGenerator(self.network_path, camera, self.depth_radius, self.fig, self.IMG_SIZE, self.network_model, device)
-
-        
-        for i in range(runs):
-            env.remove_all_obj()
-            env.reset_robot()              
-            print("----------- run ", i+1, " -----------")
-            print ("network model = ", self.network_model)
-            print ("size of input image (W, H) = (", self.IMG_SIZE," ," ,self.IMG_SIZE, ")")
-
-            
-            if vis:
-                debugID = p.addUserDebugText(f'Experiment {i+1}', [-0.0, -0.9, 0.8], [0,0,255], textSize=2)
-                time.sleep(0.5)
-                p.removeUserDebugItem(debugID)
-
-            number_of_failures = 0
-            objects.shuffle_objects()
-
-            info = objects.get_n_first_obj_info(number_of_objects)
-
-            if scenario=='packed':
-                env.create_packed(info)
-            elif scenario=='pile':
-                env.create_pile(info)
-                
-            #self.dummy_simulation_steps(50)
-
-            number_of_failures = 0
-            ATTEMPTS = 4
-            number_of_attempts = ATTEMPTS
-            failed_grasp_counter = 0
-            flag_failed_grasp_counter= False
-
-            while self.is_there_any_object(camera) and number_of_failures < number_of_attempts:                
-                #env.move_arm_away()
-                try: 
-                    idx = 0 ## select the best grasp configuration
-                    for i in range(number_of_attempts):
-                        data.add_try()  
-                        rgb, depth, _ = camera.get_cam_img()
-                        rgb = cv2.cvtColor(rgb, cv2.COLOR_BGR2RGB)
-                        
-                        grasps, save_name = generator.predict_grasp( rgb, depth, n_grasps=number_of_attempts, show_output=output)
-                        if (grasps == []):
-                                self.dummy_simulation_steps(30)
-                                print ("could not find a grasp point!")    
-                                if failed_grasp_counter > 5:
-                                    print("Failed to find a grasp points > 5 times. Skipping.")
-                                    flag_failed_grasp_counter= True
-                                    break
-
-                                failed_grasp_counter += 1 
-                                continue
-                        
-                        if vis:
-                            LID =[]
-                            for g in grasps:
-                                LID = self.draw_predicted_grasp(g,color=[1,0,1],lineIDs=LID)
-                            time.sleep(0.5)
-                            self.remove_drawing(LID)
-                            self.dummy_simulation_steps(10)
-                            
-                        #print ("grasps.length = ", len(grasps))
-                        if (idx > len(grasps)-1):  
-                            print ("idx = ", idx)
-                            if len(grasps) > 0 :
-                                idx = len(grasps)-1
-                            else:
-                                number_of_failures += 1
-                                continue  
-
-                        lineIDs = self.draw_predicted_grasp(grasps[idx])
-                        
-                        ## perform object grasping and manipulation : 
-                        #### succes_grasp means if the grasp was successful, 
-                        #### succes_target means if the target object placed in the target basket successfully
-                        x, y, z, yaw, opening_len, obj_height = grasps[idx]
-                        succes_grasp, succes_target = env.grasp((x, y, z), yaw, opening_len, obj_height)
-                        
-                        if succes_grasp:
-                            data.add_succes_grasp()                     
-
-                        ## remove visualized grasp configuration 
-                        if vis:
-                            self.remove_drawing(lineIDs)
-
-                        env.reset_robot()
-                            
-                        if succes_target:
-                            data.add_succes_target()
-                            number_of_failures = 0
-
-                            if vis:
-                                debugID = p.addUserDebugText("success", [-0.0, -0.9, 0.8], [0,0.50,0], textSize=2)
-                                time.sleep(0.25)
-                                p.removeUserDebugItem(debugID)
-                                
-                            if save_name is not None:
-                                    os.rename(save_name + '.png', save_name + f'_SUCCESS_grasp{i}.png')
-                                
-                        else:
-                            #env.reset_robot()   
-                            number_of_failures += 1
-                            idx +=1     
-                                                    
-                            if vis:
-                                debugID = p.addUserDebugText("failed", [-0.0, -0.9, 0.8], [0.5,0,0], textSize=2)
-                                time.sleep(0.25)
-                                p.removeUserDebugItem(debugID)
-
-                            if number_of_failures == number_of_attempts:
-                                if vis:
-                                    debugID = p.addUserDebugText("breaking point",  [-0.0, -0.9, 0.8], [0.5,0,0], textSize=2)
-                                    time.sleep(0.25)
-                                    p.removeUserDebugItem(debugID)
-                                
-                                break
-
-                        #env.reset_all_obj()
-        
-                except Exception as e:
-                    print("An exception occurred during the experiment!!!")
-                    print(e)
-
-                    # extensive error reporting (beetje mee oppassen om sys.exc_info() dingen)
-                    # exc_type, exc_obj, exc_tb = sys.exc_info()
-                    # fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    # print(exc_type, fname, exc_tb.tb_lineno)
-
-                    env.reset_robot()
-                    #print ("#objects = ", len(env.obj_ids), "#failed = ", number_of_failures , "#attempts =", number_of_attempts)
-        
-                if flag_failed_grasp_counter:
-                    flag_failed_grasp_counter= False
-                    break
-        data.summarize() 
+    
         
 def parse_args():
     parser = argparse.ArgumentParser(description='Grasping demo')
