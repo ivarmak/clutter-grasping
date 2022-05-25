@@ -43,6 +43,10 @@ class Environment:
         # define environment
         self.physicsClient = p.connect(p.GUI if self.vis else p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
+
+        ## this comment gives clean view without gui panels
+        p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
+
         p.setGravity(0, 0, -10)
         self.planeID = p.loadURDF('plane.urdf')
         self.tableID = p.loadURDF('environment/urdf/objects/table.urdf',
@@ -926,7 +930,7 @@ class Environment:
 
             #self.move_away_arm()
             self.move_ee([self.TARGET_ZONE_POS_2[0],
-                        -0.3, 2.25, y_orn])
+                        self.TARGET_ZONE_POS_2[1], 1.25, y_orn])
             self.move_ee([self.TARGET_ZONE_POS_2[0],
                         self.TARGET_ZONE_POS_2[1], y_drop, y_orn])
             self.move_gripper(0.085)
