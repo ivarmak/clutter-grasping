@@ -540,7 +540,6 @@ class GrasppingScenarios():
         nonTargetGrasp
         movedToRecogArea
         graspFailed
-        targetDelivered
         """
 
         targettext = ""
@@ -628,7 +627,6 @@ class GrasppingScenarios():
                         print("Lowering detection confidence with 0.1 to. ", min_conf)
                         continue
                         
-
                     ## No object is found on table, freely chosen grasp towards recognition area
                     else:
                         self.change_state("nothingFound")
@@ -655,7 +653,7 @@ class GrasppingScenarios():
                         continue                        
 
                     ## idx is iterated after incorrect grasp
-                    ## check if a next grasp is still available
+                    ## check if this next grasp is possible
                     if (self.grasp_idx > len(grasps)-1):  
                         if len(grasps) > 0 :
                             self.grasp_idx = len(grasps)-1
