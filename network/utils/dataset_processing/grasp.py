@@ -448,7 +448,7 @@ def detect_grasps(q_img, ang_img, bbox, width_img=None, no_grasps=1):
         
         y1, x1, y2, x2 = bbox
         ## add a buffer zone so bounding boxes that are a little to tight do not decrease grasp performance
-        padding = 3
+        padding = 4
         y1 -= padding
         x1 -= padding
         y2 += padding
