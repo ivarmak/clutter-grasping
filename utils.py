@@ -39,11 +39,42 @@ class YcbObjects:
     def get_obj_info(self, obj_name):
         return self.get_obj_path(obj_name), self.check_mod_orn(obj_name), self.check_mod_stiffness(obj_name)
 
-    def get_n_first_obj_info(self, n):
+    def get_n_first_obj_info(self, n, target = ""):
         info = []
+        if target != "":
+            while(target in self.obj_names[:n]):
+                self.shuffle_objects()
         for obj_name in self.obj_names[:n]:
-            info.append(self.get_obj_info(obj_name))
+                info.append(self.get_obj_info(obj_name))
         return info
+
+class TargetData:
+
+    def __init__(self, obj_names, trials, save_path):
+        self.obj_names = obj_names
+        self.trials = trials
+        self.succes_target = dict.fromkeys(obj_names, 0)
+        self.succes_grasp = dict.fromkeys(obj_names, 0)
+        self.succes_object = dict.fromkeys(obj_names, 0)
+        self.tries = dict.fromkeys(obj_names, 0)
+
+        if not os.path.exists(save_path):
+            os.mkdir(save_path)
+        now = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+        self.save_dir = f'{save_path}/{now}_target_obj'
+        os.mkdir(self.save_dir)
+
+    def add_succes_target(self, obj_name):
+        self.succes_target[obj_name] += 1
+
+    def add_succes_grasp(self, obj_name):
+        self.succes_grasp[obj_name] += 1
+
+    def add_try(self, obj_name):
+        self.tries[obj_name] += 1
+    
+    def add_wrong_object_target_tray():
+        pass
 
 
 class PackPileData:

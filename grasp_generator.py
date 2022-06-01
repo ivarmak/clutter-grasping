@@ -212,8 +212,11 @@ class GraspGenerator:
     def predict_grasp(self, rgb, depth, bbox = [], n_grasps=1, show_output=False):
         predictions, save_name = self.predict(rgb, depth, bbox, n_grasps=n_grasps, show_output=show_output)
         grasps = []
+        i = 0
         for grasp in predictions:
+            print(f"GRASP {i} quality: {grasp.quality}")
             x, y, z, roll, opening_len, obj_height = self.grasp_to_robot_frame(grasp, depth)
             grasps.append((x, y, z, roll, opening_len, obj_height))
+            i+=1
             
         return grasps, save_name
