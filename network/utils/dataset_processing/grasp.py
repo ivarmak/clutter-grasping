@@ -403,6 +403,12 @@ class Grasp:
             max_iou = max(max_iou, iou)
         return max_iou
 
+    def check_center_in_mask(self, mask):
+        if mask[int(self.center[1]*2),int(self.center[0]*2)]:
+            print("CENTER IN MASK")
+        else:
+            print("center not in mask")
+
     def plot(self, ax, color=None):
         """
         Plot Grasp
@@ -423,7 +429,7 @@ class Grasp:
             self.width * scale)
 
 
-def detect_grasps(q_img, ang_img, bbox, width_img=None, no_grasps=1):
+def detect_grasps(q_img, ang_img, bbox, mask, width_img=None, no_grasps=1):
     """
     Detect grasps in a network output.
     :param q_img: Q image network output
@@ -456,13 +462,15 @@ def detect_grasps(q_img, ang_img, bbox, width_img=None, no_grasps=1):
         
         new_q[y1:y2, x1:x2] = q_img[y1:y2, x1:x2]
         # print("Grasping from bbox")
-        local_max = peak_local_max(new_q, min_distance=20, threshold_abs=0.2, num_peaks=no_grasps)
+        local_max = peak_local_max(new_q, min_distance=1, threshold_abs=0.6, num_peaks=no_grasps)
+        # local_max = peak_local_max(new_q, min_distance=20, threshold_abs=0.2, num_peaks=no_grasps)
         
     else: 
         ## Detect standard grasp with highest quality
-        # print("Empty bbox in detect_grasp")
+
         # taken from GGCNN
-        local_max = peak_local_max(q_img, min_distance=20, threshold_abs=0.2, num_peaks=no_grasps)
+        local_max = peak_local_max(q_img, min_distance=1, threshold_abs=0.6, num_peaks=no_grasps)
+        # local_max = peak_local_max(q_img, min_distance=20, threshold_abs=0.2, num_peaks=no_grasps)
 
     # local_max = peak_local_max(q_img, min_distance=10, threshold_abs=0.02, num_peaks=no_grasps)
 
@@ -477,6 +485,7 @@ def detect_grasps(q_img, ang_img, bbox, width_img=None, no_grasps=1):
         grasp_quality = q_img[grasp_point]
 
         g = Grasp(grasp_point, grasp_angle, grasp_quality)
+        # if bbox != []: g.check_center_in_mask(mask)
         if width_img is not None:
             g.length = width_img[grasp_point]
             g.width = g.length / 2

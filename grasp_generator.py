@@ -133,7 +133,7 @@ class GraspGenerator:
 
         return q_img, ang_img, width_img
 
-    def predict(self, rgb, depth, bbox, n_grasps=1, show_output=False):
+    def predict(self, rgb, depth, bbox, mask, n_grasps=1, show_output=False):
 
         max_val = np.max(depth)
         depth = depth * (255 / max_val)
@@ -206,15 +206,16 @@ class GraspGenerator:
             plot.savefig(save_name + '.png')
             plot.clf()
 
-        grasps = detect_grasps(q_img, ang_img, bbox, width_img=width_img, no_grasps=n_grasps)
+        grasps = detect_grasps(q_img, ang_img, bbox, mask, width_img=width_img, no_grasps=n_grasps)
         return grasps, save_name
 
-    def predict_grasp(self, rgb, depth, bbox = [], n_grasps=1, show_output=False):
-        predictions, save_name = self.predict(rgb, depth, bbox, n_grasps=n_grasps, show_output=show_output)
+    def predict_grasp(self, rgb, depth, bbox = [], mask = [], n_grasps=1, show_output=False):
+        predictions, save_name = self.predict(rgb, depth, bbox, mask, n_grasps=n_grasps, show_output=show_output)
         grasps = []
         i = 0
         for grasp in predictions:
-            print(f"GRASP {i} quality: {grasp.quality}")
+            # print(f"GRASP {i} quality: {grasp.quality}")
+            # print("center: ", grasp.center)
             x, y, z, roll, opening_len, obj_height = self.grasp_to_robot_frame(grasp, depth)
             grasps.append((x, y, z, roll, opening_len, obj_height))
             i+=1
