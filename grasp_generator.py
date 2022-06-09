@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 from numpy.lib.npyio import save
 import torch.utils.data
 from PIL import Image
@@ -212,12 +213,13 @@ class GraspGenerator:
     def predict_grasp(self, rgb, depth, bbox = [], mask = [], n_grasps=1, show_output=False):
         predictions, save_name = self.predict(rgb, depth, bbox, mask, n_grasps=n_grasps, show_output=show_output)
         grasps = []
-        i = 0
+        # i = 0
         for grasp in predictions:
             # print(f"GRASP {i} quality: {grasp.quality}")
             # print("center: ", grasp.center)
+            # i+=1
+
             x, y, z, roll, opening_len, obj_height = self.grasp_to_robot_frame(grasp, depth)
             grasps.append((x, y, z, roll, opening_len, obj_height))
-            i+=1
             
         return grasps, save_name
