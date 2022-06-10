@@ -500,7 +500,7 @@ class GrasppingScenarios():
         lines = []
 
         ## add a buffer zone so bounding boxes that are a little to tight do not decrease grasp performance
-        box = self.add_padding_to_box(2,box)
+        # box = self.add_padding_to_box(2,box)
 
         newBox = self.transform_coordinates(box, img_size)
         y1, x1, y2, x2 = newBox
@@ -540,7 +540,7 @@ class GrasppingScenarios():
         r = results[0]
         box, mask, classIDs, score = r['rois'], r['masks'], r['class_ids'], r['scores']
 
-        # visualize.display_instances(rgb, box, mask, classIDs, class_names, score)                      
+        visualize.display_instances(rgb, box, mask, classIDs, class_names, score)                      
         end = time.time()
         print('exec time: {:.2f}'.format(end - start))
 
@@ -644,6 +644,19 @@ class GrasppingScenarios():
                         return False
 
         return True
+    
+    def masks_intersect(self, graspObject, recogObjects):
+        for obj in recogObjects.values():
+            print("checking intersection for: ", obj["name"])
+            if obj["name"] != graspObject["name"]:
+                intersect = obj["mask"]*graspObject["mask"]
+                if intersect.any():
+                    print("Intersection found between masks")
+                    return True
+                else:
+                    print("Masks are completely free of intersections")
+        return False
+
 
     def other_objects_grasped(self, grasp, obj, recogObjects):
         x,y,z, yaw, opening_len, obj_height = grasp
@@ -894,7 +907,7 @@ class GrasppingScenarios():
 
 
     def piled_target_scenario(self,runs, device, vis, output, debug):
-            model, class_names = setup_mrcnn('custom', 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5', 0.4)
+            model, class_names = setup_mrcnn('custom', 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5', 0.85)
             objects = YcbObjects('objects/ycb_objects',
                                 mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
                                 mod_stiffness=['Strawberry'])
@@ -974,51 +987,24 @@ class GrasppingScenarios():
                         ## Target is found on the table, find best grasp point inside bounding box    
                         if (self.state == "targetFound"):
                             self.change_state("targetGrasp")
-                            print('\nTARGET {} FOUND'.format(targetName))
-                            targettext = self.write_perm_text(targettext, "{} found".format(targetName), [0,0.5,0])
-
-                            graspObject = recogObjects[targetIndex]["box"]
-
-                            targetBox = recogObjects[targetIndex]["box"]
-                            bbox = (targetBox/2).astype(int)                ## Resize to 224 for GR ConvNet
-                            mask = recogObjects[targetIndex]["mask"]
-
-                            # if self.object_is_isolated(recogObjects[targetIndex]["box"],target,recogObjects): 
-                            #     print("target is isolated")
-                            # else: 
-                            #     print("target NOT isolated")
-                            #     self.isolate_object(recogObjects[targetIndex]["box"],env)
-                            #     if vis: 
-                            #         self.remove_drawing(objectTexts)
-                            #         targettext = self.write_perm_text(targettext, "Target: {}".format(target))
-                            #     continue
-
-                            if vis: visualTargetBox = self.draw_box(bbox, 224,[0,0.5,0])
+                            graspObject = recogObjects[targetIndex]
+                            mrcnnBox = graspObject["box"]
+                            bbox = (mrcnnBox/(mrcnn_cam.width/camera.width)).astype(int)                ## Resize to 224 for GR ConvNet
+                            mask = graspObject["mask"]
+                            print('\nTARGET {} FOUND'.format(targetName))                            
+                            if vis: 
+                                visualTargetBox = self.draw_box(bbox, 224,[0,0.5,0])
+                                targettext = self.write_perm_text(targettext, "{} found".format(targetName), [0,0.5,0])
 
                         ## At least one object found on table, grasp non-target object with highest score
                         elif (self.state == "nonTargetFound"):
                             self.change_state("nonTargetGrasp")
-                            
-                            nonTarget = list(recogObjects.values())[0]      ## use values since there might be a removed crackerbox index
-
-                            if vis: 
-                                self.write_temp_text("Target not found", [0.5,0,0])
-                                self.write_temp_text("Removing {}".format(nonTarget["name"]), [0.5,0,0])
-                            print("\nTarget not found, removing {}".format(nonTarget["name"]))
-
-                            bbox = (nonTarget["box"]/2).astype(int)         ## Resize to 224 for GR ConvNet
-                            mask = nonTarget["mask"]
-                            
-                            # if self.object_is_isolated(nonTarget["box"],nonTarget["name"],recogObjects): 
-                            #     print("nontarget is isolated")
-                            # else: 
-                            #     print("nontarget NOT isolated")
-                            #     self.isolate_object(nonTarget["box"],env)
-                            #     if vis: self.remove_drawing(objectTexts)
-                            #     continue
-
-                            
-                        
+                            graspObject = list(recogObjects.values())[0]      ## use values since there might be a removed crackerbox index
+                            mrcnnBox = graspObject["box"]
+                            bbox = (mrcnnBox/(mrcnn_cam.width/camera.width)).astype(int)         ## Resize to 224 for GR ConvNet
+                            mask = graspObject["mask"]
+                            print("\nTarget not found, removing {}".format(graspObject["name"]))
+                   
                         ## Object has been moved to recognition area and still not recognized, 
                         ## Lower confidence and restart loop
                         elif (self.state == "movedToRecogArea"):
@@ -1038,7 +1024,30 @@ class GrasppingScenarios():
                         ##########################################################################
                         ## GRASPING
                         ##########################################################################
-                            
+                        
+                        # if self.state == "targetGrasp" or self.state == "nonTargetGrasp":
+                        #     if self.masks_intersect(graspObject,recogObjects):
+                        #         print("graspObject mask overlaps with other mask")
+                        #         self.isolate_object(graspObject["box"],env)
+                        #         if vis: 
+                        #             self.remove_drawing(objectTexts)
+                        #             targettext = self.write_perm_text(targettext, "Target: {}".format(targetName))
+                        #         continue
+                                
+                        #     else: 
+                        #         print("graspObject mask is free")
+
+
+                            # if self.object_is_isolated(graspObject["box"],graspObject["name"],recogObjects): 
+                            #     print("target is isolated")
+                            # else: 
+                            #     print("target NOT isolated")
+                            #     self.isolate_object(graspObject["box"],env)
+                            #     if vis: 
+                            #         self.remove_drawing(objectTexts)
+                            #         targettext = self.write_perm_text(targettext, "Target: {}".format(targetName))
+                            #     continue
+
                         ## Grasp from bounding box, if empty, grasp is freely chosen
                         grasps, save_name = generator.predict_grasp(rgb, depth, bbox, mask, n_grasps=number_of_attempts, show_output=output)
 
@@ -1046,17 +1055,10 @@ class GrasppingScenarios():
                         if (grasps == []):
                             self.dummy_simulation_steps(50)
 
-                            if self.state == "targetGrasp":
+                            if self.state == "targetGrasp" or self.state == "nonTargetGrasp":
                                 print("No grasp found, increasing size bounding box...")
-                                while self.object_is_isolated(targetBox, recogObjects[targetIndex]["name"], recogObjects) and targetBox.shape < (448,448):
-                                    targetBox = self.add_padding_to_box(2,targetBox)
-                                    bbox = self.add_padding_to_box(1, bbox)
-                                bbox = self.add_padding_to_box(-1, bbox)            ## Remove 1 so that object is still isolated
-
-                            elif self.state == "nonTargetGrasp":
-                                print("No grasp found, increasing size bounding box...")
-                                while self.object_is_isolated(nonTarget["box"], nonTarget["name"], recogObjects) and nonTarget["box"].shape < (448,448):
-                                    nonTarget["box"] = self.add_padding_to_box(2,nonTarget["box"])
+                                while self.object_is_isolated(mrcnnBox, graspObject["name"], recogObjects) and mrcnnBox.shape < (448,448):
+                                    mrcnnBox = self.add_padding_to_box(2,mrcnnBox)
                                     bbox = self.add_padding_to_box(1, bbox)
                                 bbox = self.add_padding_to_box(-1, bbox)            ## Remove 1 so that object is still isolated
 
@@ -1068,20 +1070,23 @@ class GrasppingScenarios():
                                     self.remove_drawing(visualTargetBox)
                                 break
 
-                            ## Try again to find grasp, if not continue 
-                            grasps, save_name = generator.predict_grasp(rgb, depth, bbox, mask, n_grasps=number_of_attempts, show_output=output)
+                            ## Try again to find grasp (do not use mask in this case), if not continue 
+                            grasps, save_name = generator.predict_grasp(rgb, depth, bbox, n_grasps=number_of_attempts, show_output=output)
                             if (grasps == []):
                                 print("Grasp still empty")
+                                self.isolate_object(graspObject["box"],env)
+
+                                if vis: 
+                                    self.remove_drawing(objectTexts)
+                                    targettext = self.write_perm_text(targettext, "Target: {}".format(targetName))
+                                    
                                 failed_to_find_grasp_count += 1                 
                                 continue
 
-                        elif recogObjects != []:
+                        elif self.state == "targetGrasp" or self.state == "nonTargetGrasp":
                             ## Check if grasp overlaps with other object
-                            for g in grasps: 
-                                if self.state == "targetGrasp":
-                                    self.other_objects_grasped(g, recogObjects[targetIndex]["name"], recogObjects)  
-                                elif self.state == "nonTargetGrasp":
-                                    self.other_objects_grasped(g, nonTarget["name"], recogObjects)                      
+                            for g in grasps:
+                                self.other_objects_grasped(g, graspObject["name"], recogObjects)                     
 
                         ## idx is iterated after incorrect grasp
                         ## check if this next grasp is possible
