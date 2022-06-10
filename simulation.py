@@ -436,7 +436,7 @@ class GrasppingScenarios():
         
         self.CAM_Z = 1.9
         self.depth_radius = 1
-        self.ATTEMPTS = 3
+        self.ATTEMPTS = 5
         self.fig = plt.figure(figsize=(10, 10))
         self.state = "idle"
         self.grasp_idx = 0
@@ -540,7 +540,7 @@ class GrasppingScenarios():
         r = results[0]
         box, mask, classIDs, score = r['rois'], r['masks'], r['class_ids'], r['scores']
 
-        visualize.display_instances(rgb, box, mask, classIDs, class_names, score)                      
+        # visualize.display_instances(rgb, box, mask, classIDs, class_names, score)                      
         end = time.time()
         print('exec time: {:.2f}'.format(end - start))
 
@@ -658,7 +658,7 @@ class GrasppingScenarios():
         return False
 
 
-    def other_objects_grasped(self, grasp, obj, recogObjects):
+    def other_objects_grasped(self, grasp, graspObject, recogObjects):
         x,y,z, yaw, opening_len, obj_height = grasp
         gripper_size = opening_len + 0.02
         x1 = x+gripper_size*math.sin(yaw)
@@ -666,12 +666,23 @@ class GrasppingScenarios():
         y1 = y+gripper_size*math.cos(yaw)
         y2 = y-gripper_size*math.cos(yaw)
 
-        g = self.transform_meters([y1,x1,y2,x2])
-        print("g (y1,x1,y2,x2): ", g)
+        y1,x1,y2,x2 = self.transform_meters([y1,x1,y2,x2])
         
+        grasp_mask = np.zeros((448,448))
 
-        # if self.object_is_isolated(g,obj,recogObjects):
-        #     print("isolated grasp")
+        for i in range(y2-y1):
+            for j in range (x2-x1):
+                grasp_mask[y1+i,x1+j] = 1
+        
+        for obj in recogObjects.values():
+            if obj["name"] != graspObject["name"]:
+                intersect = obj["mask"]*graspObject["mask"]
+                if intersect.any():
+                    print("Grasp hits mask of: ", obj["name"])
+                    return True
+        
+        print("Grasp is free of other object masks")
+        return False
 
     def isolated_target_scenario(self,runs, device, vis, output, debug):
         model, class_names = setup_mrcnn('custom', 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5', 0.4)
@@ -965,12 +976,13 @@ class GrasppingScenarios():
                     objectTexts = []
                     visualTargetBox = []
                     targetDelivered = False
+                    expFailed = False
 
                     self.grasp_idx = 0 ## select the best grasp configuration
                     failed_to_find_grasp_count = 0
                     min_conf = 0.85
 
-                    while self.is_there_any_object(camera) and number_of_failures < number_of_attempts and targetDelivered != True:     
+                    while self.is_there_any_object(camera) and number_of_failures < number_of_attempts and targetDelivered != True and expFailed != True:     
                         print("\n--------------------------")
                         rgb, depth, _ = camera.get_cam_img()
 
@@ -1085,8 +1097,7 @@ class GrasppingScenarios():
 
                         elif self.state == "targetGrasp" or self.state == "nonTargetGrasp":
                             ## Check if grasp overlaps with other object
-                            for g in grasps:
-                                self.other_objects_grasped(g, graspObject["name"], recogObjects)                     
+                            self.other_objects_grasped(grasps[self.grasp_idx], graspObject, recogObjects)                     
 
                         ## idx is iterated after incorrect grasp
                         ## check if this next grasp is possible
