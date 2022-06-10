@@ -80,7 +80,7 @@ def apply_mask(image, mask, color, alpha=0.5):
     return image
 
 
-def display_instances(image, boxes, masks, class_ids, class_names, grasps = [],
+def display_instances(image, boxes, masks, class_ids, class_names,
                       scores=None, title="",
                       figsize=(16, 16), ax=None,
                       show_mask=True, show_bbox=True,
@@ -162,13 +162,6 @@ def display_instances(image, boxes, masks, class_ids, class_names, grasps = [],
             verts = np.fliplr(verts) - 1
             p = Polygon(verts, facecolor="none", edgecolor=color)
             ax.add_patch(p)
-
-
-    for g in grasps:
-        y1,x1,y2,x2 = g
-        line = plt.plot(x1, y1, x2, y2, marker = 'o')
-        # Add the patch to the Axes
-        ax.add_patch(line)
 
     ax.imshow(masked_image.astype(np.uint8))
     if auto_show:
