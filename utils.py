@@ -48,7 +48,7 @@ class YcbObjects:
                 info.append(self.get_obj_info(obj_name))
         return info
 
-class TargetData:
+class IsolatedTargetData:
 
     def __init__(self, obj_names, trials, save_path):
         self.obj_names = obj_names
@@ -76,6 +76,188 @@ class TargetData:
     def add_wrong_object_target_tray():
         pass
 
+class PackPileTargetData:
+
+    def __init__(self, num_of_obj, save_path):
+        
+        self.PRINT = True
+
+        labels = ["Target", "Run", "Success", "NumberOfObjects", "NonTargetsRemoved", "IsolationMoves", "FailedGrasps", "SuccessGrasps",
+                    "FailedTray", "SuccessTray", "NoGraspFound", "ConfScoreEnd", "RecogAreaMoves", "TargetWrongTray", "MisclassifiedAs", 
+                    "NonTargetInTargetTray", "TargetOffTable", "TableCleared"]
+        self.df = pd.DataFrame(columns= labels)
+        
+
+    ## init values
+        self.num_of_obj = num_of_obj
+
+    ## values for each run
+        self.target = ""
+        self.run = 0
+        self.target_delivered = False
+
+        self.nonTargets_removed = 0
+        self.isolation_moves = 0
+        self.failed_grasps = 0
+        self.success_grasps = 0
+        self.failed_tray = 0
+        self.success_tray = 0
+        self.no_grasp_found = 0
+        self.conf_score_at_end = 0.85
+        self.moves_to_recogArea = 0
+        # self.crackerbox_apparent = False
+
+        ## show stoppers
+        self.target_in_wrong_tray = False       ## (belong
+        self.target_misclassified_as = ""       ##          together)
+        self.nonTarget_in_targetTray = ""       ## string for which object
+        self.target_dropped_off_table = False
+        self.table_cleared = False
+
+        # self.obj_names = obj_names
+        # self.trials = trials
+        # self.succes_target = dict.fromkeys(obj_names, 0)
+        # self.succes_grasp = dict.fromkeys(obj_names, 0)
+        # self.succes_object = dict.fromkeys(obj_names, 0)
+        # self.tries = dict.fromkeys(obj_names, 0)
+
+        self.save_path = save_path
+        if not os.path.exists(save_path):
+            os.mkdir(save_path)
+
+        now = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+        self.save_dir = f'{save_path}/{now}_targeted_pile'
+        os.mkdir(self.save_dir)
+
+    def set_target(self, t):
+        if self.PRINT: print("set target, ", t)
+
+        self.target = t
+        
+    
+    def reset_values(self):
+        if self.PRINT: print("reset values")
+
+        self.target_delivered = False
+        self.nonTargets_removed = 0
+        self.isolation_moves = 0
+        self.failed_grasps = 0
+        self.success_grasps = 0
+        self.failed_tray = 0
+        self.success_tray = 0
+        self.no_grasp_found = 0
+        self.conf_score_at_end = 0.85
+        self.moves_to_recogArea = 0
+
+        self.target_in_wrong_tray = False
+        self.target_misclassified_as = ""
+        self.nonTarget_in_targetTray = ""
+        self.target_dropped_off_table = False
+        self.table_cleared = False
+        
+
+    def new_run(self, r):
+        if self.PRINT: print("new run")
+
+        self.run = r
+        self.reset_values()
+        
+
+    def success(self):
+        if self.PRINT: print("success")
+
+        self.target_delivered = True
+        self.finish_run()
+        
+
+    def make_row(self):
+        r = [
+            self.target,
+            self.run,
+            self.target_delivered,
+            self.num_of_obj,           
+            self.nonTargets_removed,
+            self.isolation_moves,
+            self.failed_grasps,
+            self.success_grasps,
+            self.failed_tray,
+            self.success_tray,
+            self.no_grasp_found,
+            self.conf_score_at_end,
+            self.moves_to_recogArea,
+            self.target_in_wrong_tray,     
+            self.target_misclassified_as,     
+            self.nonTarget_in_targetTray,  
+            self.target_dropped_off_table,
+            self.table_cleared
+        ]
+        return r
+
+    def finish_run(self):
+        if self.PRINT: print("finish run")
+
+        new_row = self.make_row()
+        self.df.loc[len(self.df.index)] = new_row
+        
+
+    def table_clear(self):
+        if self.PRINT: print("table clear")
+
+        self.table_cleared = True
+        self.finish_run()
+
+    def empty_grasps(self):
+        if self.PRINT: print("empty grasp")
+
+        self.no_grasp_found += 1
+
+    def grasp(self, success):
+        if self.PRINT: print("graspsuccess: ", success)
+        
+        if success: self.success_grasps += 1
+        else: self.failed_grasps += 1
+
+    def isolate(self):
+        if self.PRINT: print("isolate")
+
+        self.isolation_moves += 1
+
+    def recog_area_move(self):
+        if self.PRINT: print("recog area move")
+
+        self.moves_to_recogArea += 1
+
+    def lower_conf(self):
+        if self.PRINT: print("lower conf")
+
+        self.conf_score_at_end -= 0.1
+
+    def tray_reached(self, success):
+        if self.PRINT: print("traysuccess: ", success)
+        
+        if success: self.success_tray += 1
+        else: self.failed_tray += 1
+
+    def wrong_object_in_targetTray(self, obj):
+        if self.PRINT: print("wrong object in targetTray: ", obj)
+        
+        self.nonTarget_in_targetTray = obj
+        self.finish_run()
+    
+    def nonTarget_in_tray(self):
+        if self.PRINT: print("nonTarget in correct tray")
+
+        self.nonTargets_removed += 1
+
+    def target_in_nonTarget_tray(self, obj):
+        if self.PRINT: print("target in wrong tray")
+
+        self.target_in_wrong_tray = True
+        self.target_misclassified_as = obj
+        self.finish_run()
+    
+    def save(self):
+        self.df.to_pickle(self.save_dir)
 
 class PackPileData:
 
