@@ -1007,7 +1007,7 @@ class Environment:
             succes_target = True
             #self.remove_obj(grasped_obj_id)
 
-        return succes_grasp, succes_target
+        return succes_grasp, True
 
     def close(self):
         p.disconnect(self.physicsClient)

@@ -462,7 +462,7 @@ def detect_grasps(q_img, ang_img, bbox, mask, width_img=None, no_grasps=1):
         
         new_q[y1:y2, x1:x2] = q_img[y1:y2, x1:x2]
         # print("\nnew_q: ", new_q)
-        print("new_q max", np.max(new_q))
+        # print("new_q max", np.max(new_q))
         printmask = []
         if (mask != []):
             for i in range(y2-y1):
@@ -471,7 +471,7 @@ def detect_grasps(q_img, ang_img, bbox, mask, width_img=None, no_grasps=1):
                     new_q[y1+i,x1+j] = new_q[y1+i,x1+j] * mask[(y1+i)*2,(x1+j)*2]
                     printmask.append(new_q[y1+i,x1+j])
             # print("printmask: ", printmask)
-            print("printmask max: ", max(printmask))
+            # print("printmask max: ", max(printmask))
         # print("Grasping from bbox")
         local_max = peak_local_max(new_q, min_distance=1, threshold_abs=0.6, num_peaks=no_grasps)
         # local_max = peak_local_max(new_q, min_distance=20, threshold_abs=0.2, num_peaks=no_grasps)
