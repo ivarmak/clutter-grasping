@@ -119,3 +119,75 @@ results = model.detect([image], verbose=1)
 # Visualize results
 r = results[0]
 visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'])
+
+
+def transform_coordinates(box, img_size=448):
+        XMIN, XMAX, YMIN, YMAX = [-0.35, 0.45, -0.92, -0.12]
+
+        y1, x1, y2, x2 = box
+
+        y1 = (((y1 / img_size) * 0.8) + abs(YMAX))*-1
+        y2 = (((y2 / img_size) * 0.8) + abs(YMAX))*-1
+        x1 = ((x1 / img_size) * 0.8) - abs(XMIN)
+        x2 = ((x2 / img_size) * 0.8) - abs(XMIN)
+
+        return [y1,x1,y2,x2]
+    
+    recogObjects = []
+
+    def object_is_isolated(box, recogObjects):
+        y1, x1, y2, x2 = box
+
+        for i in range(y2-y1):
+            for j in range(x2-x1):
+                for obj in recogObjects:
+                    if obj["mask"][j,i]:
+                        return False
+
+        return True
+
+    box = box[0]
+
+    def isolate_object(box):
+
+        padding = 17
+        box[0] -= padding
+        box[1] -= padding
+        box[2] += padding
+        box[3] += padding
+
+        box = transform_coordinates(box)
+
+        y1,x1,y2,x2 = box
+        vert = p.getQuaternionFromEuler([0.5*np.pi, np.pi/2, 0.0])
+        hor = p.getQuaternionFromEuler([0.0, np.pi/2, 0.0])
+        y_orn = [hor, vert, hor, vert, hor]
+
+        x = [x1, x2, x2, x1, x1]
+        y = [y1, y1, y2, y2, y1]
+
+        ## TODO: make dependent on depth image
+        c_idx = 0
+
+        env.move_gripper(0.1)
+        env.auto_close_gripper()
+
+        for i in range(5):
+            env.move_ee([x[c_idx], y[c_idx], z, y_orn[c_idx]])
+            env.move_ee([x[c_idx], y[c_idx], z, y_orn[c_idx+1]])
+            
+            if i != 4: c_idx = (c_idx+1) %4
+        env.move_ee([x[i], y[i], env.GRIPPER_MOVING_HEIGHT, y_orn])
+
+    # isolate_object(box)
+
+    def other_objects_grasped(grasp, obj, recogObjects):
+        x,y,z, yaw, opening_len, obj_height = grasp
+        gripper_size = opening_len + 0.02
+        x1 = x+gripper_size*math.sin(yaw)
+        x2 = x-gripper_size*math.sin(yaw)
+        y1 = y+gripper_size*math.cos(yaw)
+        y2 = y-gripper_size*math.cos(yaw)
+
+        g = self.transform_meters([y1,x1,y2,x2])
+        print("g (y1,x1,y2,x2): ", g)
