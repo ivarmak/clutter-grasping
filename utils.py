@@ -54,7 +54,7 @@ class IsolatedTargetData:
         
         self.PRINT = False
 
-        labels = ["Target", "Run", "Success", "FailReason", "NumberOfObjects", "NonTargetsRemoved", "IsolationMoves", 
+        labels = ["Target", "Run", "Success", "FailReason", "OtherObjects", "NonTargetsRemoved", "IsolationMoves", 
                     "FailedGrasps", "SuccessGrasps", "FailedTray", "SuccessTray", "NoGraspFound", "ConfScoreEnd",
                      "RecogAreaMoves", "MisclassifiedAs", "NonTargetInTargetTray"]
         self.df = pd.DataFrame(columns= labels)
@@ -67,6 +67,7 @@ class IsolatedTargetData:
         self.target = ""
         self.run = 0
         self.target_delivered = False
+        self.other_obj = []
 
         self.nonTargets_removed = 0
         self.isolation_moves = 0
@@ -99,6 +100,11 @@ class IsolatedTargetData:
         print("set target, ", t)
 
         self.target = t
+    
+    def set_other_obj(self, objects):
+        if self.PRINT: print("other obj: ", objects)
+
+        self.other_obj = objects
 
     #########################
     ## Methods
@@ -135,6 +141,7 @@ class IsolatedTargetData:
         self.no_grasp_found = 0
         self.conf_score_at_end = 0.85
         self.moves_to_recogArea = 0
+        self.other_obj = []
 
         self.fail_reason = ""
         self.target_misclassified_as = ""
@@ -245,7 +252,7 @@ class IsolatedTargetData:
             self.run,
             self.target_delivered,
             self.fail_reason,
-            self.num_of_obj,           
+            self.other_obj,       
             self.nonTargets_removed,
             self.isolation_moves,
             self.failed_grasps,
@@ -262,6 +269,42 @@ class IsolatedTargetData:
 
     def save(self):
         self.df.to_pickle(os.path.join(self.save_dir,'results'))
+    
+    def print(self):
+
+        df = self.df
+
+        runs = 10
+        objects = 15
+
+        target_list = ['Banana', 'ChipsCan', 'FoamBrick', 'GelatinBox', 'Hammer', 
+                            'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan', 'PowerDrill', 
+                            'Scissors', 'Strawberry', 'TennisBall', 'TomatoSoupCan']
+        
+        total_succes = 0
+        tot_exp = runs * objects
+
+        for target in target_list:
+            targetDF = df[df['Target']== target].copy()
+            success_count = targetDF['Success'].values.sum()
+
+            total_succes += success_count
+            ## print target success count
+            if target in ["Banana", "Hammer", "Pear"]: t="\t\t" 
+            else: t = "\t"
+            print("{} {} ({}/10)".format(target, t, success_count))
+
+        print("Overall performance: ({} / 150) = {:.2f}\n".format(total_succes, (total_succes/tot_exp)))
+
+
+
+
+
+
+
+
+
+
 
 class PackPileTargetData:
 
@@ -429,6 +472,12 @@ class PackPileTargetData:
         self.nonTarget_in_targetTray = obj
         self.finish_run()
 
+    def confidence_too_low(self):
+        if self.PRINT: print("confidence too low")
+
+        self.fail_reason = "confTooLow"
+        self.finish_run()
+
     def target_in_nonTarget_tray(self, obj):
         if self.PRINT: print("target in wrong tray")
 
@@ -483,6 +532,32 @@ class PackPileTargetData:
 
     def save(self):
         self.df.to_pickle(os.path.join(self.save_dir,'results'))
+    
+    def print(self):
+
+        df = self.df
+
+        runs = 10
+        objects = 15
+
+        target_list = ['Banana', 'ChipsCan', 'FoamBrick', 'GelatinBox', 'Hammer', 
+                            'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan', 'PowerDrill', 
+                            'Scissors', 'Strawberry', 'TennisBall', 'TomatoSoupCan']
+        
+        total_succes = 0
+        tot_exp = runs * objects
+
+        for target in target_list:
+            targetDF = df[df['Target']== target].copy()
+            success_count = targetDF['Success'].values.sum()
+
+            total_succes += success_count
+            ## print target success count
+            if target in ["Banana", "Hammer", "Pear"]: t="\t\t" 
+            else: t = "\t"
+            print("{} {} ({}/10)".format(target, t, success_count))
+
+        print("Overall performance: ({} / 150) = {:.2f}\n".format(total_succes, (total_succes/tot_exp)))
 
 
 class PackPileData:
