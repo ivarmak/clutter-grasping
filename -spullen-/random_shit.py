@@ -8,6 +8,42 @@ print('Image Height       : ',height)
 print('Image Width        : ',width)
 print('Number of Channels : ',channels)
 
+
+## grasping when to go or when to isolate
+# if self.state == "targetGrasp" or self.state == "nonTargetGrasp":
+#     if self.masks_intersect(graspObject,recogObjects):
+#         print("graspObject mask overlaps with other mask")
+#         self.isolate_object(graspObject["box"],env)
+#         if vis: 
+#             self.remove_drawing(objectTexts)
+#             targettext = self.write_perm_text(targettext, "Target: {}".format(targetName))
+#         continue
+        
+#     else: 
+#         print("graspObject mask is free")
+
+
+# if self.object_is_isolated(graspObject["box"],graspObject["name"],recogObjects): 
+#     print("target is isolated")
+# else: 
+#     print("target NOT isolated")
+#     self.isolate_object(graspObject["box"],env)
+#     if vis: 
+#         self.remove_drawing(objectTexts)
+#         targettext = self.write_perm_text(targettext, "Target: {}".format(targetName))
+#     continue
+
+
+## increase bounding box part
+# if self.state == "targetGrasp" or self.state == "nonTargetGrasp":
+#     print("No grasp found, increasing size bounding box...")
+#     while self.object_is_isolated(mrcnnBox, graspObject["name"], recogObjects) and mrcnnBox.shape < (448,448):
+#         mrcnnBox = self.add_padding_to_box(2,mrcnnBox)
+#         bbox = self.add_padding_to_box(1, bbox)
+#     bbox = self.add_padding_to_box(-1, bbox)            ## Remove 1 so that object is still isolated
+
+
+
 ## zoek in dubbele array (mask) wat niet achtergrond is en print dat
 # for j in seg:
 #     for i in filter(lambda x: x != 4 and x != 1, j):

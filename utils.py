@@ -297,16 +297,258 @@ class IsolatedTargetData:
         print("Overall performance: ({} / 150) = {:.2f}\n".format(total_succes, (total_succes/tot_exp)))
 
 
+class PackTargetData:
+
+    def __init__(self, num_of_obj, save_path):
+        
+        self.PRINT = False
+
+        labels = ["Target", "Run", "Success", "FailReason", "CrackerBox", "NumberOfObjects", "NonTargetsRemoved", "IsolationMoves", 
+                    "FailedGrasps", "SuccessGrasps", "FailedTray", "SuccessTray", "NoGraspFound", "ConfScoreEnd",
+                     "RecogAreaMoves", "MisclassifiedAs", "NonTargetInTargetTray"]
+        self.df = pd.DataFrame(columns= labels)
+        
+
+    ## init values
+        self.num_of_obj = num_of_obj
+
+    ## values for each run
+        self.target = ""
+        self.run = 0
+        self.target_delivered = False
+
+        self.nonTargets_removed = 0
+        self.isolation_moves = 0
+        self.failed_grasps = 0
+        self.success_grasps = 0
+        self.failed_tray = 0
+        self.success_tray = 0
+        self.no_grasp_found = 0
+        self.conf_score_at_end = 0.85
+        self.moves_to_recogArea = 0
+        self.crackerbox_apparent = False
+
+        ## show stoppers
+        self.fail_reason = ""
+        self.target_misclassified_as = ""       
+        self.nonTarget_in_targetTray = ""       ## string for which object
+
+        self.save_path = save_path
+        if not os.path.exists(save_path):
+            os.mkdir(save_path)
+
+        now = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+        self.save_dir = f'{save_path}/{now}_targeted_pack'
+        os.mkdir(self.save_dir)
+
+    #########################
+    ## Starters
+    ######################### 
+
+    def set_target(self, t):
+        print("set target, ", t)
+
+        self.target = t
+
+    def set_crackerbox_true(self):
+        self.crackerbox_apparent = True
+
+    #########################
+    ## Methods
+    #########################    
+
+    def new_run(self, r):
+        if self.PRINT: print("new run")
+
+        self.run = r
+        self.reset_values()
+        
+    def success(self):
+        print("SUCCESS")
+
+        self.target_delivered = True
+        self.finish_run()
+
+    def finish_run(self):
+        if self.PRINT: print("finish run")
+
+        new_row = self.make_row()
+        self.df.loc[len(self.df.index)] = new_row
+
+    def reset_values(self):
+        if self.PRINT: print("reset values")
+
+        self.target_delivered = False
+        self.nonTargets_removed = 0
+        self.isolation_moves = 0
+        self.failed_grasps = 0
+        self.success_grasps = 0
+        self.failed_tray = 0
+        self.success_tray = 0
+        self.no_grasp_found = 0
+        self.conf_score_at_end = 0.85
+        self.moves_to_recogArea = 0
+
+        self.fail_reason = ""
+        self.crackerbox_apparent = False
+        self.target_misclassified_as = ""
+        self.nonTarget_in_targetTray = ""
+    
+    #########################
+    ## Numericals
+    #########################  
+
+    def empty_grasps(self):
+        if self.PRINT: print("empty grasp")
+
+        self.no_grasp_found += 1
+
+    def grasp(self, success):
+        if self.PRINT: print("graspsuccess: ", success)
+        
+        if success: self.success_grasps += 1
+        else: self.failed_grasps += 1
+
+    def isolate(self):
+        if self.PRINT: print("isolate")
+
+        self.isolation_moves += 1
+
+    def recog_area_move(self):
+        if self.PRINT: print("recog area move")
+
+        self.moves_to_recogArea += 1
+
+    def lower_conf(self):
+        if self.PRINT: print("lower conf")
+
+        self.conf_score_at_end -= 0.1
+
+    def tray_reached(self, success):
+        if self.PRINT: print("traysuccess: ", success)
+        
+        if success: self.success_tray += 1
+        else: self.failed_tray += 1
+    
+    def nonTarget_in_tray(self):
+        if self.PRINT: print("nonTarget in correct tray")
+
+        self.nonTargets_removed += 1
+
+    #########################
+    ## Failures
+    #########################  
+
+    def table_clear(self):
+        if self.PRINT: print("table clear")
+
+        self.fail_reason = "tableCleared"
+        self.finish_run()
+
+    def isolation_step_limit(self):
+        if self.PRINT: print("isolation step limit")
+
+        self.fail_reason = "tooManyIsolationSteps"
+        self.finish_run()
+
+    def wrong_object_in_targetTray(self, obj):
+        if self.PRINT: print("wrong object in targetTray: ", obj)
+        
+        self.fail_reason = "nonTargetinTargetTray"
+        self.nonTarget_in_targetTray = obj
+        self.finish_run()
+
+    def confidence_too_low(self):
+        if self.PRINT: print("confidence too low")
+
+        self.fail_reason = "confTooLow"
+        self.finish_run()
+
+    def target_in_nonTarget_tray(self, obj):
+        if self.PRINT: print("target in wrong tray")
+
+        self.fail_reason = "targetInNonTargetTray"
+        self.target_misclassified_as = obj
+        self.finish_run()
+    
+    def failed_to_find_grasps(self):
+        if self.PRINT: print("grasp finding fail")
+
+        self.fail_reason = "graspFindFail"
+        self.finish_run()
+
+    def fail_count_reached(self):
+        if self.PRINT: print("fail count reached")
+
+        self.fail_reason = "tooManyFailures"
+        self.finish_run()
+
+    def target_fell_off_table(self):
+        if self.PRINT: print("target on floor")
+
+        self.fail_reason = "targetOnFloor"
+        self.finish_run()
+
+    #########################
+    ## Saving
+    #########################  
+
+    def make_row(self):
+        r = [
+            self.target,
+            self.run,
+            self.target_delivered,
+            self.fail_reason,
+            self.crackerbox_apparent,
+            self.num_of_obj,           
+            self.nonTargets_removed,
+            self.isolation_moves,
+            self.failed_grasps,
+            self.success_grasps,
+            self.failed_tray,
+            self.success_tray,
+            self.no_grasp_found,
+            self.conf_score_at_end,
+            self.moves_to_recogArea,    
+            self.target_misclassified_as,     
+            self.nonTarget_in_targetTray
+        ]
+        return r
+
+    def save(self):
+        self.df.to_pickle(os.path.join(self.save_dir,'results'))
+    
+    def print(self):
+
+        df = self.df
+
+        runs = 10
+        objects = 15
+
+        target_list = ['Banana', 'ChipsCan', 'FoamBrick', 'GelatinBox', 'Hammer', 
+                            'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan', 'PowerDrill', 
+                            'Scissors', 'Strawberry', 'TennisBall', 'TomatoSoupCan']
+        
+        total_succes = 0
+        tot_exp = runs * objects
+
+        for target in target_list:
+            targetDF = df[df['Target']== target].copy()
+            success_count = targetDF['Success'].values.sum()
+
+            total_succes += success_count
+            ## print target success count
+            if target in ["Banana", "Hammer", "Pear"]: t="\t\t" 
+            else: t = "\t"
+            print("{} {} ({}/10)".format(target, t, success_count))
+
+        print("Overall performance: ({} / 150) = {:.2f}\n".format(total_succes, (total_succes/tot_exp)))
 
 
 
 
 
-
-
-
-
-class PackPileTargetData:
+class PileTargetData:
 
     def __init__(self, num_of_obj, save_path):
         

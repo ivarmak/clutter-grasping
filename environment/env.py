@@ -492,11 +492,16 @@ class Environment:
         self.wait_until_still(obj_id)
         self.update_obj_states()
 
-    def load_isolated_obj(self, path, mod_orn=False, mod_stiffness=False):
+    def load_isolated_obj(self, path, x, mod_orn=False, mod_stiffness=False):
+        if x: 
+            r_y = -0.05
+            ## x = -0.5 - 0.5
+        else:
+        
+            r_y = random.uniform(
+                self.obj_init_pos[1] - 0.1, self.obj_init_pos[1] + 0.1)
         r_x = random.uniform(
             self.obj_init_pos[0] - 0.1, self.obj_init_pos[0] + 0.1)
-        r_y = random.uniform(
-            self.obj_init_pos[1] - 0.1, self.obj_init_pos[1] + 0.1)
         yaw = random.uniform(0, np.pi)
 
         pos = [r_x, r_y, self.Z_TABLE_TOP]
@@ -602,9 +607,11 @@ class Environment:
             new_pos[axis] += step
         p.resetBasePositionAndOrientation(obj_id, new_pos, orn)
 
-    def create_packed(self, obj_info):
+    def create_packed(self, obj_info, targetInfo = ""):
         init_x, init_y, init_z = self.obj_init_pos[0], self.obj_init_pos[1], self.Z_TABLE_TOP
         yaw = random.uniform(0, np.pi)
+        if targetInfo != "":
+            obj_info.insert(random.randrange(len(obj_info)+1), targetInfo)
         path, mod_orn, mod_stiffness = obj_info[0]
         center_obj, _, _ = self.load_obj(
             path, [init_x, init_y, init_z], yaw, mod_orn, mod_stiffness)
