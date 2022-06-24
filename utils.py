@@ -296,7 +296,6 @@ class IsolatedTargetData:
 
         print("Overall performance: ({} / 150) = {:.2f}\n".format(total_succes, (total_succes/tot_exp)))
 
-
 class PackTargetData:
 
     def __init__(self, num_of_obj, save_path):
@@ -544,13 +543,9 @@ class PackTargetData:
 
         print("Overall performance: ({} / 150) = {:.2f}\n".format(total_succes, (total_succes/tot_exp)))
 
-
-
-
-
 class PileTargetData:
 
-    def __init__(self, num_of_obj, save_path):
+    def __init__(self, num_of_obj, save_path, scenario):
         
         self.PRINT = False
 
@@ -590,7 +585,7 @@ class PileTargetData:
             os.mkdir(save_path)
 
         now = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
-        self.save_dir = f'{save_path}/{now}_targeted_pile'
+        self.save_dir = f'{save_path}/{now}_targeted_{scenario}'
         os.mkdir(self.save_dir)
 
     #########################

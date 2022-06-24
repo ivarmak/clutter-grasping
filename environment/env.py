@@ -493,13 +493,8 @@ class Environment:
         self.update_obj_states()
 
     def load_isolated_obj(self, path, x, mod_orn=False, mod_stiffness=False):
-        if x: 
-            r_y = -0.05
-            ## x = -0.5 - 0.5
-        else:
-        
-            r_y = random.uniform(
-                self.obj_init_pos[1] - 0.1, self.obj_init_pos[1] + 0.1)
+        r_y = random.uniform(
+            self.obj_init_pos[1] - 0.1, self.obj_init_pos[1] + 0.1)
         r_x = random.uniform(
             self.obj_init_pos[0] - 0.1, self.obj_init_pos[0] + 0.1)
         yaw = random.uniform(0, np.pi)
