@@ -163,12 +163,12 @@ class Environment:
             # p.addUserDebugLine([camera.x-alpha, camera.y+alpha, z_cam_l2], [camera.x-beta, camera.y+beta, z_cam_l3], color, lineWidth=4)
 
             ### working area             
-            # working_area = 0.79 #m 
-            # beta = 0.4 
-            # p.addUserDebugLine([camera.x+beta, camera.y+beta, working_area], [camera.x+beta, camera.y-beta, working_area], [0, 1, 0], lineWidth=5)
-            # p.addUserDebugLine([camera.x+beta, camera.y-beta, working_area], [camera.x-beta, camera.y-beta, working_area], [0, 1, 0], lineWidth=5)
-            # p.addUserDebugLine([camera.x-beta, camera.y-beta, working_area], [camera.x-beta, camera.y+beta, working_area], [0, 1, 0], lineWidth=5)
-            # p.addUserDebugLine([camera.x-beta, camera.y+beta, working_area], [camera.x+beta, camera.y+beta, working_area], [0, 1, 0], lineWidth=5)
+            working_area = 0.79 #m 
+            beta = 0.4 
+            p.addUserDebugLine([camera.x+beta, camera.y+beta, working_area], [camera.x+beta, camera.y-beta, working_area], [0, 1, 0], lineWidth=5)
+            p.addUserDebugLine([camera.x+beta, camera.y-beta, working_area], [camera.x-beta, camera.y-beta, working_area], [0, 1, 0], lineWidth=5)
+            p.addUserDebugLine([camera.x-beta, camera.y-beta, working_area], [camera.x-beta, camera.y+beta, working_area], [0, 1, 0], lineWidth=5)
+            p.addUserDebugLine([camera.x-beta, camera.y+beta, working_area], [camera.x+beta, camera.y+beta, working_area], [0, 1, 0], lineWidth=5)
 
 
 
@@ -509,9 +509,10 @@ class Environment:
 
     def load_obj_same_place(self, path, x, y, mod_orn=False, mod_stiffness=False):
         yaw = 2.0268441312371794
-
+        pitch = random.uniform(0, np.pi) ## roll powerdrill over boorkop
+        roll = random.uniform(0, np.pi) ## roll powerdrill over zijkant
         pos = [x, y, self.Z_TABLE_TOP]
-        obj_id, _, _ = self.load_obj(path, pos, yaw, mod_orn, mod_stiffness)
+        obj_id, _, _ = self.load_turned_obj(path, pos, yaw, roll, pitch, mod_orn, mod_stiffness)
         for _ in range(100):
             self.step_simulation()
             
@@ -888,6 +889,7 @@ class Environment:
             """
             succes_grasp, succes_target, succes_object = False, False, False
             grasped_obj_id = None
+            grasped_obj_name = ""
 
             x, y, z = pos
             # Substracht gripper finger length from z
@@ -924,7 +926,7 @@ class Environment:
                 if grasped_obj_name == target:
                     succes_object = True
             else:
-                return succes_target, succes_grasp, succes_object
+                return succes_target, succes_grasp, succes_object, grasped_obj_name
 
             # Move object to target zone
             y_drop = self.TARGET_ZONE_POS_2[2] + z_offset + obj_height + 0.15
@@ -947,7 +949,7 @@ class Environment:
                 #self.remove_obj(grasped_obj_id)
 
             if not succes_object: print("Grasped object {} is not target {}...".format(grasped_obj_name, target))
-            return succes_grasp, succes_target, succes_object
+            return succes_grasp, succes_target, succes_object, grasped_obj_name
 
     def move_to_recog_area(self, pos: tuple, roll: float, gripper_opening_length: float, obj_height: float, debug: bool = False):
         """

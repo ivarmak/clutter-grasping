@@ -21,6 +21,62 @@ from mrcnn.coco import coco
 # Root directory of the project
 ROOT_DIR = os.path.abspath('/home/ivar/Documents/Thesis/clutterbot/')
 
+def look_at_object(vis):
+    CAM_Z = 1.9
+    IMG_SIZE = 224
+    MRCNN_IMG_SIZE = 448
+
+    weights = 'bestMRCNN_1000st_20ep_augSeg_gt1_val0.19'
+    weights2 = 'MRCNN_st300_20ep_augSeq_GT1_val0.18'
+    weights3 = 'mask_rcnn_object_0032'
+    weights4 = 'rand/rand_4000st/weights.bestVal=0.22.hdf5'
+    weights5 = 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5'
+
+    # model, class_names = setup_mrcnn('custom', weights5, 0.8)
+
+    objects = YcbObjects('objects/ycb_objects',
+                        mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
+                        mod_stiffness=['Strawberry'])
+
+    names = ['BG', 'Banana', 'ChipsCan', 'CrackerBox', 'FoamBrick', 'GelatinBox', 'Hammer', 
+                'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan', 'PowerDrill', 
+                'Scissors', 'Strawberry', 'TennisBall', 'TomatoSoupCan']
+
+    obj = 'FoamBrick'
+
+    obj_path = 'objects/ycb_objects/Ycb' + obj + '/model.urdf'
+
+    ## camera settings: cam_pos, cam_target, near, far, size, fov
+    center_x, center_y, center_z = 0.05, -0.52, CAM_Z
+
+    # camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (IMG_SIZE, IMG_SIZE), 40)
+    camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (MRCNN_IMG_SIZE, MRCNN_IMG_SIZE), 40)
+    env = Environment(camera, vis=True, finger_length=0.06)
+
+    for _ in range(10):
+        env.reset_robot()          
+        env.remove_all_obj()
+
+        env.load_obj_same_place(obj_path, -0.2, -0.12)
+
+        rgb, _ ,_ = camera.get_cam_img()
+
+        ## center point x coordinate is evaluated?
+
+        target_pos = env.obj_positions[0]
+        if target_pos[0] < -0.35 or target_pos[0] > 0.45 or target_pos[1] > -0.12 or target_pos[1] < -0.92:
+            print("Target fell on floor, FAIL")
+        else:
+            print("whithin limits")
+
+        plt.imshow(rgb)
+        plt.waitforbuttonpress()
+
+    # while(True):
+    #     pass
+
+
+
 class GrasppingScenarios():
 
     def __init__(self,network_model="GR_ConvNet"):
@@ -321,15 +377,6 @@ class GrasppingScenarios():
             return False
         elif x1 > x2:
             print("box check fail, x1 > x2")
-            
-            # classes = ['BG', 'Banana', 'ChipsCan', 'CrackerBox', 'FoamBrick', 'GelatinBox', 'Hammer', 
-            #     'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan', 'PowerDrill', 
-            #     'Scissors', 'Strawberry', 'TennisBall', 'TomatoSoupCan']
-            # for id in self.temp_r["class_ids"]:
-            #     print(classes[id] + " ", end = "")
-            # print("boxes: ", self.temp_r["rois"])
-            # visualize.display_instances(self.temp_image, self.temp_r['rois'], self.temp_r['masks'], self.temp_r['class_ids'], classes, self.temp_r['scores'])
-            
             return False
         else:
             return True
@@ -411,12 +458,15 @@ class GrasppingScenarios():
 
         else:
             pile = True
+            ## remove crackerbox since it is ungraspable on its side
+            target_list.remove("CrackerBox")
 
             if scenario == 'pile':
                 number_of_objects = 5
                 
             elif scenario == 'clutter':
                 number_of_objects = 14
+                target_list = ['Pear', 'Strawberry', 'FoamBrick', 'PowerDrill', 'MediumClamp']
 
             data = PileTargetData(number_of_objects, 'results', scenario)
 
@@ -424,8 +474,7 @@ class GrasppingScenarios():
                         'MustardBottle': 4812, 'Pear': 1575, 'PottedMeatCan': 2720, 'PowerDrill': 6054, 'Scissors': 2592, 'Strawberry': 1343,
                         'TennisBall': 1148, 'TomatoSoupCan': 2328
                     }
-            ## remove crackerbox since it is ungraspable on its side
-            target_list.remove("CrackerBox")
+            
 
         # target_list = ['Pear']
 
@@ -500,13 +549,13 @@ class GrasppingScenarios():
                 min_conf = 0.85
 
                 while expSuccess != True and expFailed != True:
-                    try:     
+                    # try:     
                         # print("\n--------------------------")
                         rgb, depth, _ = camera.get_cam_img()
 
                         ## check if target fell off the table, if so stop experiment
                         # target_pos = env.obj_positions[0]
-                        # if target_pos[0] < -0.35 or target_pos[0] > 0.45 or target_pos[0][1] > -0.12 or target_pos[0][1] < -0.92:
+                        # if target_pos[0] < -0.35 or target_pos[0] > 0.45 or target_pos[1] > -0.12 or target_pos[1] < -0.92:
                         #     print("Target fell on floor, FAIL")
                         #     data.target_fell_off_table()
                         #     break
@@ -631,7 +680,7 @@ class GrasppingScenarios():
                         
                         ## Target found, move item to target tray
                         if self.state == "targetGrasp":
-                            succes_grasp, succes_tray, succes_object = env.targeted_grasp((x, y, z), yaw, opening_len, obj_height, targetName)
+                            succes_grasp, succes_tray, succes_object, grasped_obj = env.targeted_grasp((x, y, z), yaw, opening_len, obj_height, targetName)
                             # print("Succesfully grasped target object == {}".format(succes_object))
                             if succes_tray:
                                 if succes_object:
@@ -639,7 +688,7 @@ class GrasppingScenarios():
                                     targetDelivered = True
                                 else:
                                     print("nonTarget in target tray, FAIL")
-                                    data.wrong_object_in_targetTray(graspObject["name"])
+                                    data.wrong_object_in_targetTray(grasped_obj)
                                     expFailed = True
                             else:
                                 targettext = self.write_perm_text(targettext, "Target: {}".format(targetName))
@@ -741,16 +790,16 @@ class GrasppingScenarios():
 
                     ##########################################################################
 
-                    except Exception as e:
-                                print("An exception occurred during the experiment!!!")
-                                print(e)
+                    # except Exception as e:
+                    #             print("An exception occurred during the experiment!!!")
+                    #             print(e)
 
-                                # extensive error reporting (beetje mee oppassen om sys.exc_info() dingen)
-                                # exc_type, exc_obj, exc_tb = sys.exc_info()
-                                # fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                                # print(exc_type, fname, exc_tb.tb_lineno)
+                    #             # extensive error reporting (beetje mee oppassen om sys.exc_info() dingen)
+                    #             # exc_type, exc_obj, exc_tb = sys.exc_info()
+                    #             # fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    #             # print(exc_type, fname, exc_tb.tb_lineno)
 
-                                env.reset_robot()
+                    #             env.reset_robot()
                                 
         data.save()
         data.print()    
@@ -765,14 +814,14 @@ def parse_args():
     parser.add_argument('--scenario', type=str, default='isolated', help='Grasping scenario (isolated/packed/pile)')
     parser.add_argument('--network', type=str, default='GR_ConvNet', help='Network model (GR_ConvNet/...)')
 
-    parser.add_argument('--runs', type=int, default=1, help='Number of runs the scenario is executed')
+    parser.add_argument('--runs', type=int, default=10, help='Number of runs the scenario is executed')
     parser.add_argument('--attempts', type=int, default=10, help='Number of attempts in case grasping failed')
 
     parser.add_argument('--save-network-output', dest='output', type=bool, default=False,
                         help='Save network output (True/False)')
 
     parser.add_argument('--device', type=str, default='cpu', help='device (cpu/gpu)')
-    parser.add_argument('--vis', type=bool, default=True, help='vis (True/False)')
+    parser.add_argument('--vis', type=bool, default=False, help='vis (True/False)')
     parser.add_argument('--report', type=bool, default=True, help='report (True/False)')
     parser.add_argument('--colab', type=bool, default=True, help='colab (True/False)')
     parser.add_argument('--background', type=str, default='plain', help='background (jitter / texture)')
@@ -808,3 +857,6 @@ if __name__ == '__main__':
     elif args.command == 'clutter':
         grasp = GrasppingScenarios(args.network)
         grasp.target_scenario(runs, device, vis, output, scenario='clutter', debug=False)
+    
+    elif args.command == 'obj':
+        look_at_object(vis)
