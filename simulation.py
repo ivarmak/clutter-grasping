@@ -314,6 +314,7 @@ class GrasppingScenarios():
         for obj in spawn_obj:
             path, mod_orn, mod_stiffness = objects.get_obj_info(obj)
             env.load_obj_same_place(path, LOCATIONS[spawn_obj.index(obj)][0], LOCATIONS[spawn_obj.index(obj)][1], mod_orn, mod_stiffness)
+            env.obj_names.append(obj)
 
     def change_state(self, newState):
         # print("\nSTATECHANGE: {} -> {}".format(self.state, newState))
