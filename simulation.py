@@ -467,7 +467,7 @@ class GrasppingScenarios():
                 
             elif scenario == 'clutter':
                 number_of_objects = 14
-                target_list = ['Pear', 'Strawberry', 'FoamBrick', 'PowerDrill', 'MediumClamp']
+                target_list = ['Pear', 'Strawberry', 'FoamBrick', 'PowerDrill', 'MediumClamp', 'MasterChefCan']
 
             data = PileTargetData(number_of_objects, 'results', scenario)
 
