@@ -85,12 +85,6 @@ class IsolatedTargetData:
         self.nonTarget_in_targetTray = ""       ## string for which object
 
         self.save_path = save_path
-        if not os.path.exists(save_path):
-            os.mkdir(save_path)
-
-        now = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
-        self.save_dir = f'{save_path}/{now}_isolated_target'
-        os.mkdir(self.save_dir)
 
     #########################
     ## Starters
@@ -268,7 +262,13 @@ class IsolatedTargetData:
         return r
 
     def save(self):
-        self.df.to_pickle(os.path.join(self.save_dir,'results'))
+        if not os.path.exists(self.save_path):
+            os.mkdir(self.save_path)
+
+        now = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+        save_dir = f'{self.save_path}/{now}_targeted_pack'
+        os.mkdir(save_dir)
+        self.df.to_pickle(os.path.join(save_dir,'results'))
     
     def print(self):
 
@@ -333,12 +333,6 @@ class PackTargetData:
         self.nonTarget_in_targetTray = ""       ## string for which object
 
         self.save_path = save_path
-        if not os.path.exists(save_path):
-            os.mkdir(save_path)
-
-        now = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
-        self.save_dir = f'{save_path}/{now}_targeted_pack'
-        os.mkdir(self.save_dir)
 
     #########################
     ## Starters
@@ -515,7 +509,13 @@ class PackTargetData:
         return r
 
     def save(self):
-        self.df.to_pickle(os.path.join(self.save_dir,'results'))
+        if not os.path.exists(self.save_path):
+            os.mkdir(self.save_path)
+
+        now = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+        save_dir = f'{self.save_path}/{now}_targeted_pack'
+        os.mkdir(save_dir)
+        self.df.to_pickle(os.path.join(save_dir,'results'))
     
     def print(self):
 
@@ -581,12 +581,6 @@ class PileTargetData:
         self.nonTarget_in_targetTray = ""       ## string for which object
 
         self.save_path = save_path
-        if not os.path.exists(save_path):
-            os.mkdir(save_path)
-
-        now = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
-        self.save_dir = f'{save_path}/{now}_targeted_{scenario}'
-        os.mkdir(self.save_dir)
 
     #########################
     ## Starters
@@ -768,7 +762,13 @@ class PileTargetData:
         return r
 
     def save(self):
-        self.df.to_pickle(os.path.join(self.save_dir,'results'))
+        if not os.path.exists(self.save_path):
+            os.mkdir(self.save_path)
+
+        now = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+        save_dir = f'{self.save_path}/{now}_targeted_pack'
+        os.mkdir(save_dir)
+        self.df.to_pickle(os.path.join(save_dir,'results'))
     
     def print(self):
 

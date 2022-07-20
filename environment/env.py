@@ -121,9 +121,15 @@ class Environment:
             yaw = 30
             pitch = -50
             target = [0.1, -0.30, 0.95]
+
+            ## closeup for screenshots
+            # dist = 1
+            # yaw = -0.40
+            # pitch = -41.20
+            # target = [0.11,-0.23,0.88]
             p.resetDebugVisualizerCamera(dist, yaw, pitch, target)
 
-            # camera model
+            # # camera model
             # alpha = 0.025 #m 
             # z_cam_l1 = camera.z #m 
 
@@ -162,13 +168,13 @@ class Environment:
             # p.addUserDebugLine([camera.x-alpha, camera.y-alpha, z_cam_l2], [camera.x-beta, camera.y-beta, z_cam_l3], color, lineWidth=4)
             # p.addUserDebugLine([camera.x-alpha, camera.y+alpha, z_cam_l2], [camera.x-beta, camera.y+beta, z_cam_l3], color, lineWidth=4)
 
-            ### working area             
-            working_area = 0.79 #m 
-            beta = 0.4 
-            p.addUserDebugLine([camera.x+beta, camera.y+beta, working_area], [camera.x+beta, camera.y-beta, working_area], [0, 1, 0], lineWidth=5)
-            p.addUserDebugLine([camera.x+beta, camera.y-beta, working_area], [camera.x-beta, camera.y-beta, working_area], [0, 1, 0], lineWidth=5)
-            p.addUserDebugLine([camera.x-beta, camera.y-beta, working_area], [camera.x-beta, camera.y+beta, working_area], [0, 1, 0], lineWidth=5)
-            p.addUserDebugLine([camera.x-beta, camera.y+beta, working_area], [camera.x+beta, camera.y+beta, working_area], [0, 1, 0], lineWidth=5)
+            # ## working area             
+            # working_area = 0.79 #m 
+            # beta = 0.4 
+            # p.addUserDebugLine([camera.x+beta, camera.y+beta, working_area], [camera.x+beta, camera.y-beta, working_area], [0, 1, 0], lineWidth=5)
+            # p.addUserDebugLine([camera.x+beta, camera.y-beta, working_area], [camera.x-beta, camera.y-beta, working_area], [0, 1, 0], lineWidth=5)
+            # p.addUserDebugLine([camera.x-beta, camera.y-beta, working_area], [camera.x-beta, camera.y+beta, working_area], [0, 1, 0], lineWidth=5)
+            # p.addUserDebugLine([camera.x-beta, camera.y+beta, working_area], [camera.x+beta, camera.y+beta, working_area], [0, 1, 0], lineWidth=5)
 
 
 

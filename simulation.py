@@ -11,6 +11,7 @@ import math
 import matplotlib.pyplot as plt
 import time
 import random
+import cv2
 
 from mrcnn.config import Config
 from mrcnn import utils
@@ -53,27 +54,27 @@ def look_at_object(vis):
     camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (MRCNN_IMG_SIZE, MRCNN_IMG_SIZE), 40)
     env = Environment(camera, vis=True, finger_length=0.06)
 
-    for _ in range(10):
-        env.reset_robot()          
-        env.remove_all_obj()
+    # for _ in range(10):
+    #     env.reset_robot()          
+    #     env.remove_all_obj()
 
-        env.load_obj_same_place(obj_path, -0.2, -0.12)
+    #     env.load_obj_same_place(obj_path, -0.2, -0.12)
 
-        rgb, _ ,_ = camera.get_cam_img()
+    #     rgb, _ ,_ = camera.get_cam_img()
 
-        ## center point x coordinate is evaluated?
+    #     ## center point x coordinate is evaluated?
 
-        target_pos = env.obj_positions[0]
-        if target_pos[0] < -0.35 or target_pos[0] > 0.45 or target_pos[1] > -0.12 or target_pos[1] < -0.92:
-            print("Target fell on floor, FAIL")
-        else:
-            print("whithin limits")
+    #     target_pos = env.obj_positions[0]
+    #     if target_pos[0] < -0.35 or target_pos[0] > 0.45 or target_pos[1] > -0.12 or target_pos[1] < -0.92:
+    #         print("Target fell on floor, FAIL")
+    #     else:
+    #         print("whithin limits")
 
-        plt.imshow(rgb)
-        plt.waitforbuttonpress()
+    #     plt.imshow(rgb)
+    #     plt.waitforbuttonpress()
 
-    # while(True):
-    #     pass
+    while(True):
+        pass
 
 
 
@@ -290,7 +291,7 @@ class GrasppingScenarios():
                     "mask": mask[:,:,j],
                     "score": score[j],
                 }
-                objectTexts.append(self.write_perm_text("", class_names[classIDs[j]], [0,0,0.5], [convBox[3],convBox[2],0.85], 1))
+                # objectTexts.append(self.write_perm_text("", class_names[classIDs[j]], [0,0,0.5], [convBox[3],convBox[2],0.85], 1))
                 recogObjects[j] = obj
             # print("{} {:.2f} | ".format(class_names[classIDs[j]], score[j]), end=" ")
         # print("")
@@ -467,7 +468,7 @@ class GrasppingScenarios():
                 
             elif scenario == 'clutter':
                 number_of_objects = 14
-                target_list = ['Pear', 'Strawberry', 'FoamBrick', 'PowerDrill', 'MediumClamp', 'MasterChefCan']
+                target_list = ['FoamBrick', 'MasterChefCan', 'PowerDrill']
 
             data = PileTargetData(number_of_objects, 'results', scenario)
 
@@ -552,8 +553,8 @@ class GrasppingScenarios():
                 while expSuccess != True and expFailed != True:
                     # try:     
                         # print("\n--------------------------")
-                        rgb, depth, _ = camera.get_cam_img()
-
+                        bgr, depth, _ = camera.get_cam_img()
+                        rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
                         ## check if target fell off the table, if so stop experiment
                         # target_pos = env.obj_positions[0]
                         # if target_pos[0] < -0.35 or target_pos[0] > 0.45 or target_pos[1] > -0.12 or target_pos[1] < -0.92:
@@ -627,7 +628,7 @@ class GrasppingScenarios():
                             self.dummy_simulation_steps(50)
 
                             if failed_to_find_grasp_count > 3:
-                                if vis:
+                                if vis:                                    
                                     self.remove_drawing(lineIDs)
                                     self.remove_drawing(objectTexts)
                                     self.remove_drawing(visualTargetBox)
@@ -641,6 +642,7 @@ class GrasppingScenarios():
                                 isolation_steps += 1
                                 # self.grasp_idx = 0
                                 data.isolate()
+                                self.remove_drawing(visualTargetBox)
 
                             if vis: 
                                 self.remove_drawing(objectTexts)
@@ -778,7 +780,7 @@ class GrasppingScenarios():
                         if succes_tray:
                             data.tray_reached(True)
                             number_of_failures = 0
-                            if vis: self.write_temp_text("succes")
+                            # if vis: self.write_temp_text("succes")
                             
                             if save_name is not None:
                                 os.rename(save_name + '.png', save_name + f'_SUCCESS_grasp{i}.png')
@@ -786,7 +788,7 @@ class GrasppingScenarios():
                         else:
                             data.tray_reached(False)
                             # number_of_failures += 1                    
-                            if vis: self.write_temp_text("failed", [0.5,0,0])
+                            # if vis: self.write_temp_text("failed", [0.5,0,0])
 
 
                     ##########################################################################
@@ -815,14 +817,14 @@ def parse_args():
     parser.add_argument('--scenario', type=str, default='isolated', help='Grasping scenario (isolated/packed/pile)')
     parser.add_argument('--network', type=str, default='GR_ConvNet', help='Network model (GR_ConvNet/...)')
 
-    parser.add_argument('--runs', type=int, default=10, help='Number of runs the scenario is executed')
+    parser.add_argument('--runs', type=int, default=1, help='Number of runs the scenario is executed')
     parser.add_argument('--attempts', type=int, default=10, help='Number of attempts in case grasping failed')
 
     parser.add_argument('--save-network-output', dest='output', type=bool, default=False,
                         help='Save network output (True/False)')
 
     parser.add_argument('--device', type=str, default='cpu', help='device (cpu/gpu)')
-    parser.add_argument('--vis', type=bool, default=False, help='vis (True/False)')
+    parser.add_argument('--vis', type=bool, default=True, help='vis (True/False)')
     parser.add_argument('--report', type=bool, default=True, help='report (True/False)')
     parser.add_argument('--colab', type=bool, default=True, help='colab (True/False)')
     parser.add_argument('--background', type=str, default='plain', help='background (jitter / texture)')
