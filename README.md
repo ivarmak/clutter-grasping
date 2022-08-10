@@ -1,8 +1,8 @@
-## Target Driven Object Grasping in Highly Cluttered Scenarios through Domain Randomization and Active Segmentation 
+# Target Driven Object Grasping in Highly Cluttered Scenarios through Domain Randomization and Active Segmentation 
 
 This repository contains the implementation of the Artificial Intelligence Master Thesis written by Ivar Mak.
 
-# Sources
+## Sources
 
 This project uses adapted content from the following repositories:
 
