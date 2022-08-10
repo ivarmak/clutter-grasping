@@ -1,0 +1,701 @@
+224
+targetList =  ['PowerDrill', 'PottedMeatCan', 'ChipsCan', 'TomatoSoupCan', 'Scissors', 'MasterChefCan', 'TennisBall', 'Pear', 'Strawberry', 'MediumClamp', 'Banana', 'MustardBottle', 'Hammer', 'CrackerBox', 'FoamBrick', 'GelatinBox']
+
+--------------------------
+set target,  PowerDrill
+Target (1/16)
+
+run =  1
+SUCCESS
+
+run =  2
+SUCCESS
+
+run =  3
+SUCCESS
+
+run =  4
+SUCCESS
+
+run =  5
+SUCCESS
+
+run =  6
+Grasped object MediumClamp is not target PowerDrill...
+nonTarget in target tray, FAIL
+
+run =  7
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+SUCCESS
+
+run =  8
+SUCCESS
+
+run =  9
+SUCCESS
+
+run =  10
+SUCCESS
+
+--------------------------
+set target,  PottedMeatCan
+Target (2/16)
+
+run =  1
+SUCCESS
+
+run =  2
+Isolating object...
+SUCCESS
+
+run =  3
+SUCCESS
+
+run =  4
+Isolating object...
+No object found on table
+SUCCESS
+
+run =  5
+SUCCESS
+
+run =  6
+Grasp idx hits end length
+Isolating object...
+No object found on table
+No object found on table
+SUCCESS
+
+run =  7
+Grasped object PottedMeatCan is target PottedMeatCan, it should be nonTarget...
+target in wrong tray, FAIL
+
+run =  8
+SUCCESS
+
+run =  9
+SUCCESS
+
+run =  10
+SUCCESS
+
+--------------------------
+set target,  ChipsCan
+Target (3/16)
+
+run =  1
+SUCCESS
+
+run =  2
+SUCCESS
+
+run =  3
+SUCCESS
+
+run =  4
+SUCCESS
+
+run =  5
+SUCCESS
+
+run =  6
+SUCCESS
+
+run =  7
+SUCCESS
+
+run =  8
+SUCCESS
+
+run =  9
+SUCCESS
+
+run =  10
+Isolating object...
+SUCCESS
+
+--------------------------
+set target,  TomatoSoupCan
+Target (4/16)
+
+run =  1
+No object found on table
+Grasped object TomatoSoupCan is target TomatoSoupCan, it should be nonTarget...
+target in wrong tray, FAIL
+
+run =  2
+Isolating object...
+No object found on table
+Grasped object TomatoSoupCan is target TomatoSoupCan, it should be nonTarget...
+target in wrong tray, FAIL
+
+run =  3
+Isolating object...
+No object found on table
+SUCCESS
+
+run =  4
+No object found on table
+Grasped object TomatoSoupCan is target TomatoSoupCan, it should be nonTarget...
+target in wrong tray, FAIL
+
+run =  5
+No object found on table
+No object found on table
+Grasped object TomatoSoupCan is target TomatoSoupCan, it should be nonTarget...
+target in wrong tray, FAIL
+
+run =  6
+SUCCESS
+
+run =  7
+No object found on table
+SUCCESS
+
+run =  8
+No object found on table
+Grasped object TomatoSoupCan is target TomatoSoupCan, it should be nonTarget...
+target in wrong tray, FAIL
+
+run =  9
+No object found on table
+Grasped object TomatoSoupCan is target TomatoSoupCan, it should be nonTarget...
+target in wrong tray, FAIL
+
+run =  10
+Grasp idx hits end length
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+No object found on table
+SUCCESS
+
+--------------------------
+set target,  Scissors
+Target (5/16)
+
+run =  1
+SUCCESS
+
+run =  2
+SUCCESS
+
+run =  3
+SUCCESS
+
+run =  4
+SUCCESS
+
+run =  5
+SUCCESS
+
+run =  6
+SUCCESS
+
+run =  7
+SUCCESS
+
+run =  8
+SUCCESS
+
+run =  9
+SUCCESS
+
+run =  10
+SUCCESS
+
+--------------------------
+set target,  MasterChefCan
+Target (6/16)
+
+run =  1
+Isolating object...
+No object found on table
+SUCCESS
+
+run =  2
+SUCCESS
+
+run =  3
+No object found on table
+SUCCESS
+
+run =  4
+Isolating object...
+No object found on table
+SUCCESS
+
+run =  5
+SUCCESS
+
+run =  6
+Isolating object...
+No object found on table
+No object found on table
+SUCCESS
+
+run =  7
+No object found on table
+SUCCESS
+
+run =  8
+SUCCESS
+
+run =  9
+SUCCESS
+
+run =  10
+SUCCESS
+
+--------------------------
+set target,  TennisBall
+Target (7/16)
+
+run =  1
+SUCCESS
+
+run =  2
+SUCCESS
+
+run =  3
+grasps == []
+Isolating object...
+No object found on table
+SUCCESS
+
+run =  4
+SUCCESS
+
+run =  5
+Isolating object...
+SUCCESS
+
+run =  6
+Grasp idx hits end length
+Isolating object...
+No object found on table
+SUCCESS
+
+run =  7
+SUCCESS
+
+run =  8
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Isolating object...
+No object found on table
+SUCCESS
+
+run =  9
+SUCCESS
+
+run =  10
+Isolating object...
+No object found on table
+SUCCESS
+
+--------------------------
+set target,  Pear
+Target (8/16)
+
+run =  1
+Grasp idx hits end length
+Isolating object...
+SUCCESS
+
+run =  2
+SUCCESS
+
+run =  3
+SUCCESS
+
+run =  4
+SUCCESS
+
+run =  5
+SUCCESS
+
+run =  6
+Grasp idx hits end length
+Isolating object...
+SUCCESS
+
+run =  7
+Grasped object CrackerBox is not target Pear...
+nonTarget in target tray, FAIL
+
+run =  8
+SUCCESS
+
+run =  9
+SUCCESS
+
+run =  10
+SUCCESS
+
+--------------------------
+set target,  Strawberry
+Target (9/16)
+
+run =  1
+SUCCESS
+
+run =  2
+SUCCESS
+
+run =  3
+SUCCESS
+
+run =  4
+SUCCESS
+
+run =  5
+Grasp idx hits end length
+Isolating object...
+SUCCESS
+
+run =  6
+SUCCESS
+
+run =  7
+SUCCESS
+
+run =  8
+SUCCESS
+
+run =  9
+Grasped object Pear is not target Strawberry...
+nonTarget in target tray, FAIL
+
+run =  10
+SUCCESS
+
+--------------------------
+set target,  MediumClamp
+Target (10/16)
+
+run =  1
+Isolating object...
+SUCCESS
+
+run =  2
+SUCCESS
+
+run =  3
+SUCCESS
+
+run =  4
+SUCCESS
+
+run =  5
+SUCCESS
+
+run =  6
+SUCCESS
+
+run =  7
+SUCCESS
+
+run =  8
+SUCCESS
+
+run =  9
+SUCCESS
+
+run =  10
+Grasped object MediumClamp is target MediumClamp, it should be nonTarget...
+target in wrong tray, FAIL
+
+--------------------------
+set target,  Banana
+Target (11/16)
+
+run =  1
+SUCCESS
+
+run =  2
+SUCCESS
+
+run =  3
+SUCCESS
+
+run =  4
+SUCCESS
+
+run =  5
+No object found on table
+SUCCESS
+
+run =  6
+SUCCESS
+
+run =  7
+Isolating object...
+SUCCESS
+
+run =  8
+SUCCESS
+
+run =  9
+SUCCESS
+
+run =  10
+SUCCESS
+
+--------------------------
+set target,  MustardBottle
+Target (12/16)
+
+run =  1
+SUCCESS
+
+run =  2
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Isolating object...
+SUCCESS
+
+run =  3
+SUCCESS
+
+run =  4
+SUCCESS
+
+run =  5
+No object found on table
+No object found on table
+SUCCESS
+
+run =  6
+Isolating object...
+No object found on table
+SUCCESS
+
+run =  7
+SUCCESS
+
+run =  8
+SUCCESS
+
+run =  9
+Grasped object MustardBottle is target MustardBottle, it should be nonTarget...
+target in wrong tray, FAIL
+
+run =  10
+SUCCESS
+
+--------------------------
+set target,  Hammer
+Target (13/16)
+
+run =  1
+Grasped object MasterChefCan is not target Hammer...
+nonTarget in target tray, FAIL
+
+run =  2
+SUCCESS
+
+run =  3
+SUCCESS
+
+run =  4
+SUCCESS
+
+run =  5
+Isolating object...
+SUCCESS
+
+run =  6
+SUCCESS
+
+run =  7
+SUCCESS
+
+run =  8
+SUCCESS
+
+run =  9
+SUCCESS
+
+run =  10
+SUCCESS
+
+--------------------------
+set target,  CrackerBox
+Target (14/16)
+
+run =  1
+SUCCESS
+
+run =  2
+SUCCESS
+
+run =  3
+Grasp idx hits end length
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Too many isolation steps, FAIL
+
+run =  4
+SUCCESS
+
+run =  5
+Grasped object TomatoSoupCan is not target CrackerBox...
+nonTarget in target tray, FAIL
+
+run =  6
+Grasp idx hits end length
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+table cleared target not in tray, FAIL
+
+run =  7
+SUCCESS
+
+run =  8
+SUCCESS
+
+run =  9
+SUCCESS
+
+run =  10
+SUCCESS
+
+--------------------------
+set target,  FoamBrick
+Target (15/16)
+
+run =  1
+SUCCESS
+
+run =  2
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+SUCCESS
+
+run =  3
+SUCCESS
+
+run =  4
+SUCCESS
+
+run =  5
+SUCCESS
+
+run =  6
+Isolating object...
+Grasp idx hits end length
+Isolating object...
+SUCCESS
+
+run =  7
+Grasp idx hits end length
+Isolating object...
+SUCCESS
+
+run =  8
+Isolating object...
+Isolating object...
+No object found on table
+Grasp idx hits end length
+Isolating object...
+SUCCESS
+
+run =  9
+SUCCESS
+
+run =  10
+No object found on table
+SUCCESS
+
+--------------------------
+set target,  GelatinBox
+Target (16/16)
+
+run =  1
+Grasped object ChipsCan is not target GelatinBox...
+nonTarget in target tray, FAIL
+
+run =  2
+Grasp idx hits end length
+Isolating object...
+Grasped object GelatinBox is target GelatinBox, it should be nonTarget...
+target in wrong tray, FAIL
+
+run =  3
+SUCCESS
+
+run =  4
+SUCCESS
+
+run =  5
+SUCCESS
+
+run =  6
+SUCCESS
+
+run =  7
+SUCCESS
+
+run =  8
+SUCCESS
+
+run =  9
+SUCCESS
+
+run =  10
+SUCCESS
+Banana 		 (10/10)
+ChipsCan 	 (10/10)
+FoamBrick 	 (10/10)
+GelatinBox 	 (8/10)
+Hammer 		 (9/10)
+MasterChefCan 	 (10/10)
+MediumClamp 	 (9/10)
+MustardBottle 	 (9/10)
+Pear 		 (9/10)
+PottedMeatCan 	 (9/10)
+PowerDrill 	 (9/10)
+Scissors 	 (10/10)
+Strawberry 	 (9/10)
+TennisBall 	 (10/10)
+TomatoSoupCan 	 (4/10)
+Overall performance: (135 / 150) = 0.90
