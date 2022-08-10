@@ -136,3 +136,57 @@ def look_at_object(vis):
     # plt.waitforbuttonpress()
     # # plt.imshow(rgb)
     # # plt.waitforbuttonpress()
+
+    def look_at_object(vis):
+        CAM_Z = 1.9
+        IMG_SIZE = 224
+        MRCNN_IMG_SIZE = 448
+
+        weights = 'bestMRCNN_1000st_20ep_augSeg_gt1_val0.19'
+        weights2 = 'MRCNN_st300_20ep_augSeq_GT1_val0.18'
+        weights3 = 'mask_rcnn_object_0032'
+        weights4 = 'rand/rand_4000st/weights.bestVal=0.22.hdf5'
+        weights5 = 'tex/tex100_800st2_endEp30_val0.24/weights.bestVal.hdf5'
+
+        # model, class_names = setup_mrcnn('custom', weights5, 0.8)
+
+        objects = YcbObjects('objects/ycb_objects',
+                            mod_orn=['ChipsCan', 'MustardBottle', 'TomatoSoupCan'],
+                            mod_stiffness=['Strawberry'])
+
+        names = ['BG', 'Banana', 'ChipsCan', 'CrackerBox', 'FoamBrick', 'GelatinBox', 'Hammer', 
+                    'MasterChefCan', 'MediumClamp', 'MustardBottle', 'Pear', 'PottedMeatCan', 'PowerDrill', 
+                    'Scissors', 'Strawberry', 'TennisBall', 'TomatoSoupCan']
+
+        obj = 'FoamBrick'
+
+        obj_path = 'objects/ycb_objects/Ycb' + obj + '/model.urdf'
+
+        ## camera settings: cam_pos, cam_target, near, far, size, fov
+        center_x, center_y, center_z = 0.05, -0.52, CAM_Z
+
+        # camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (IMG_SIZE, IMG_SIZE), 40)
+        camera = Camera((center_x, center_y, center_z), (center_x, center_y, 0.785), 0.2, 2.0, (MRCNN_IMG_SIZE, MRCNN_IMG_SIZE), 40)
+        env = Environment(camera, vis=True, finger_length=0.06)
+
+        # for _ in range(10):
+        #     env.reset_robot()          
+        #     env.remove_all_obj()
+
+        #     env.load_obj_same_place(obj_path, -0.2, -0.12)
+
+        #     rgb, _ ,_ = camera.get_cam_img()
+
+        #     ## center point x coordinate is evaluated?
+
+        #     target_pos = env.obj_positions[0]
+        #     if target_pos[0] < -0.35 or target_pos[0] > 0.45 or target_pos[1] > -0.12 or target_pos[1] < -0.92:
+        #         print("Target fell on floor, FAIL")
+        #     else:
+        #         print("whithin limits")
+
+        #     plt.imshow(rgb)
+        #     plt.waitforbuttonpress()
+
+        while(True):
+            pass

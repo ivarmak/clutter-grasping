@@ -3,5 +3,6 @@ network_output
 images
 data
 .vscode
--spullen-/MRCNNoutput
+-spullen-/
+script.sh
 mrcnn/weights/

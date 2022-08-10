@@ -134,7 +134,7 @@ class Environment:
             # z_cam_l1 = camera.z #m 
 
             # color = [0.3, 0, 0]
-            # p.addUserDebugText("RGB-D camera", [camera.x-0.1, camera.y, camera.z+0.02], color, textSize=2)
+            # # p.addUserDebugText("RGB-D camera", [camera.x-0.1, camera.y, camera.z+0.02], color, textSize=2)
 
             # p.addUserDebugLine([camera.x+alpha, camera.y+alpha, z_cam_l1], [camera.x+alpha, camera.y-alpha, z_cam_l1], color, lineWidth=4)
             # p.addUserDebugLine([camera.x+alpha, camera.y-alpha, z_cam_l1], [camera.x-alpha, camera.y-alpha, z_cam_l1], color, lineWidth=4)
