@@ -1,10 +1,9 @@
 # Target Driven Object Grasping in Highly Cluttered Scenarios through Domain Randomization and Active Segmentation 
 
-This repository contains the implementation of the Artificial Intelligence Master Thesis written by Ivar Mak.
+An example scenario of singulating a target object from the clutter, and a consecutive successful grasp.
 
 <p align="center">
-  <img src="img/isolate+grasp.gif" width="800" title="An example scenario of singulating a target object
-from the clutter, and a consecutive successful grasp.">
+  <img src="img/isolate+grasp.gif" width="800" title="">
 </p>
 
 
@@ -47,15 +46,18 @@ We can perform a simulation experiment by running the 'simulation.py' script. As
 cd ~/clutter-grasping
 python3 simulation.py clutter
 ```
+
+  - Replace 'clutter' with 'iso', 'pack', or 'pile' to run another scenario.
+
   - Run 'simulation.py --help' to see a full list of options.
     
       - --runs=10 forces the system to run 10 experiments
       - In the ***environment/env.py*** file, we have provided a parameter namely ***SIMULATION_STEP_DELAY*** to control the speed of the simulator, this parameter should be tuned based on your hardware. 
        
-      - After performing each experiment, a summary of the results will be visualized and saved in the ***results*** folder.
+      - After running the simulation, a summary of the results will be saved in the results folder as a pickled pandas dataframe. It can be opened by using pandas read_pickle function.
 
-      - Furthermore, you can check the output of the network by setting the ***--save-network-output=True***. The output will be saved into the ***network_output*** folder
-      
+      - Furthermore, you can check the output of the network by setting the ***--save-network-output=True***. The output will be saved into the ***network_output*** folder.
+
 ## Sources
 
 This project uses adapted content from the following repositories:
