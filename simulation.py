@@ -770,8 +770,8 @@ def parse_args():
     parser.add_argument('--device', type=str, default='cpu', help='device (cpu/gpu)')
     parser.add_argument('--vis', type=bool, default=True, help='vis (True/False)')
     parser.add_argument('--report', type=bool, default=True, help='report (True/False)')
-    parser.add_argument('--colab', type=bool, default=True, help='colab (True/False)')
-    parser.add_argument('--background', type=str, default='plain', help='background (jitter / texture)')
+    # parser.add_argument('--colab', type=bool, default=True, help='colab (True/False)')
+    # parser.add_argument('--background', type=str, default='plain', help='background (jitter / texture)')
 
                         
     args = parser.parse_args()
@@ -787,7 +787,6 @@ if __name__ == '__main__':
     vis=args.vis
     report=args.report
     colab=args.colab
-    background = args.background
     
     if args.command == 'iso':
         grasp = GrasppingScenarios(args.network)

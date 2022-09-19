@@ -47,7 +47,15 @@ We can perform a simulation experiment by running the 'simulation.py' script. As
 cd ~/clutter-grasping
 python3 simulation.py clutter
 ```
+  - Run 'simulation.py --help' to see a full list of options.
+    
+      - --runs=10 forces the system to run 10 experiments
+      - In the ***environment/env.py*** file, we have provided a parameter namely ***SIMULATION_STEP_DELAY*** to control the speed of the simulator, this parameter should be tuned based on your hardware. 
+       
+      - After performing each experiment, a summary of the results will be visualized and saved in the ***results*** folder.
 
+      - Furthermore, you can check the output of the network by setting the ***--save-network-output=True***. The output will be saved into the ***network_output*** folder
+      
 ## Sources
 
 This project uses adapted content from the following repositories:
