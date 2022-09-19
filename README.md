@@ -3,7 +3,7 @@
 This repository contains the implementation of the Artificial Intelligence Master Thesis written by Ivar Mak.
 
 <p align="center">
-  <img src="img/isolate+grasp.gif" width="500" title="An example scenario of singulating a target object
+  <img src="img/isolate+grasp.gif" width="800" title="An example scenario of singulating a target object
 from the clutter, and a consecutive successful grasp.">
 </p>
 
