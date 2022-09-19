@@ -1,11 +1,10 @@
 # Target Driven Object Grasping in Highly Cluttered Scenarios through Domain Randomization and Active Segmentation 
 
-An example scenario of singulating a target object from the clutter, and a consecutive successful grasp.
-
 <p align="center">
   <img src="img/isolate+grasp.gif" width="800" title="">
 </p>
 
+An example scenario of singulating a target object from the clutter, and a consecutive successful grasp.
 
 ## Requirements
 
