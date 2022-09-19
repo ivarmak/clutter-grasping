@@ -804,6 +804,3 @@ if __name__ == '__main__':
     elif args.command == 'clutter':
         grasp = GrasppingScenarios(args.network)
         grasp.target_scenario(runs, device, vis, output, scenario='clutter', debug=False)
-    
-    elif args.command == 'obj':
-        look_at_object(vis)
