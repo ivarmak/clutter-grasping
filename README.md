@@ -39,7 +39,7 @@ close all your terminals and open one.
 We can perform a simulation experiment by running the 'simulation.py' script. As shown in the following image, we can perform experiments in four different grasping scenarios, including isolated, packed, piled, and cluttered scenarios:
 
 <p align="center">
-  <img src="img/scenarios.png" width="600" title="">
+  <img src="img/scenarios.png" width="800" title="">
 </p>
 
 
