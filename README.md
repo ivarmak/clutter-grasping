@@ -45,7 +45,7 @@ We can perform a simulation experiment by running the 'simulation.py' script. As
 
 ```bash
 cd ~/clutter-grasping
-
+python3 simulation.py clutter
 ```
 
 ## Sources
