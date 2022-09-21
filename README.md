@@ -53,7 +53,7 @@ python3 simulation.py clutter
       - --runs=10 forces the system to run 10 experiments
       - In the ***environment/env.py*** file, we have provided a parameter namely ***SIMULATION_STEP_DELAY*** to control the speed of the simulator, this parameter should be tuned based on your hardware. 
        
-      - After running the simulation, a summary of the results will be saved in the results folder as a pickled pandas dataframe. It can be opened by using pandas read_pickle function.
+      - After running the simulation, a summary of the results will be saved in the results folder as a pickled pandas dataframe. It can be opened by using pandas [read_pickle](https://pandas.pydata.org/docs/reference/api/pandas.read_pickle.html) function.
 
       - Furthermore, you can check the output of the network by setting the ***--save-network-output=True***. The output will be saved into the ***network_output*** folder.
 
