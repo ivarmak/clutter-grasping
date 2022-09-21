@@ -4,7 +4,7 @@
   <img src="img/isolate+grasp.gif" width="800" title="">
 </p>
 
-An example scenario of singulating a target object from the clutter, and a consecutive successful grasp.
+An example scenario of singulating the target TennisBall from a pile of objects, and a consecutive successful grasp.
 
 ## Requirements
 
@@ -46,7 +46,7 @@ cd ~/clutter-grasping
 python3 simulation.py clutter
 ```
 
-  - Replace 'clutter' with 'iso', 'pack', or 'pile' to run another scenario.
+  - Replace 'clutter' with 'iso', 'pack', or 'pile' to run one of the other scenarios.
 
   - Run 'simulation.py --help' to see a full list of options.
     
