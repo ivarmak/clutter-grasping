@@ -6,6 +6,8 @@
 
 An example scenario of singulating the target TennisBall from a pile of objects, and a consecutive successful grasp.
 
+For a full report on this master thesis project: https://fse.studenttheses.ub.rug.nl/28346/
+
 ## Requirements
 
 Ensure you are running Python>=3.6.5 and import the required libraries by running:
